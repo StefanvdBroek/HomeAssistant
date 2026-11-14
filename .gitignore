@@ -12,6 +12,7 @@ homeassistant/config/*
 !homeassistant/config/secrets.yaml.example
 !homeassistant/config/dashboards/
 !homeassistant/config/packages/
+!homeassistant/config/tools/
 
 # Mosquitto runtime-data
 mosquitto/data/*

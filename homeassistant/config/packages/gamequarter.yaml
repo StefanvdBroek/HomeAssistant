@@ -1,0 +1,14 @@
+# Laatste berichten van gamequarter.be voor het dashboard "Overzicht".
+# De site heeft geen RSS-feed; tools/gamequarter.py leest daarom de homepage uit.
+
+command_line:
+  - sensor:
+      name: GameQuarter laatste bericht
+      unique_id: gamequarter_laatste_bericht
+      icon: mdi:gamepad-variant
+      command: python3 /config/tools/gamequarter.py
+      command_timeout: 60
+      scan_interval: 900 # elk kwartier
+      value_template: "{{ value_json.laatste }}"
+      json_attributes:
+        - berichten
