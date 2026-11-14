@@ -1,0 +1,18 @@
+# Override om Home Assistant op macOS (Docker Desktop) te testen.
+# Geen host-netwerk, Bluetooth of USB: automatische apparaatdetectie werkt hier dus niet.
+#
+# Starten/stoppen via het script (vult MAC_LAN_IP in):
+#   scripts/mac/ha.sh up | down | restart | logs
+#
+# smarthome.local aankondigen op het netwerk (eenmalig, start daarna automatisch):
+#   scripts/mac/install-mdns.sh
+
+services:
+  homeassistant:
+    network_mode: !reset null
+    privileged: !reset false
+    volumes: !override
+      - ./homeassistant/config:/config
+    ports:
+      - "8123:8123"
+      - "${MAC_LAN_IP:?start via scripts/mac/ha.sh}:80:8123" # http://smarthome.local

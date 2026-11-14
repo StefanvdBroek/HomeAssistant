@@ -1,0 +1,354 @@
+# Afstandsbediening voor de LG OLED65B29LA in de woonkamer.
+# Gegenereerd; pas gerust aan. Knoppen: https://www.home-assistant.io/integrations/webostv/#actions
+title: Afstandsbediening
+views:
+  - title: Woonkamer-tv
+    path: tv
+    icon: mdi:remote-tv
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: media-control
+            entity: media_player.living_room_lg_webos_tv_oled65b29la
+          - type: grid
+            columns: 3
+            square: false
+            cards:
+              - type: button
+                name: Uit
+                icon: mdi:power
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.turn_off
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+              - type: button
+                name: Dempen
+                icon: mdi:volume-mute
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: MUTE
+              - type: button
+                name: Instellingen
+                icon: mdi:cog
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: MENU
+          - type: grid
+            title: Navigatie
+            columns: 3
+            square: false
+            cards:
+              - type: button
+                name: Home
+                icon: mdi:home
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: HOME
+              - type: button
+                name: Omhoog
+                icon: mdi:chevron-up
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: UP
+              - type: button
+                name: Info
+                icon: mdi:information-outline
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: INFO
+              - type: button
+                name: Links
+                icon: mdi:chevron-left
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: LEFT
+              - type: button
+                name: OK
+                icon: mdi:circle-medium
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: ENTER
+              - type: button
+                name: Rechts
+                icon: mdi:chevron-right
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: RIGHT
+              - type: button
+                name: Terug
+                icon: mdi:arrow-u-left-top
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: BACK
+              - type: button
+                name: Omlaag
+                icon: mdi:chevron-down
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: DOWN
+              - type: button
+                name: Afsluiten
+                icon: mdi:close
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: EXIT
+          - type: grid
+            title: Volume en kanalen
+            columns: 4
+            square: false
+            cards:
+              - type: button
+                name: Vol −
+                icon: mdi:volume-minus
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: VOLUMEDOWN
+              - type: button
+                name: Vol +
+                icon: mdi:volume-plus
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: VOLUMEUP
+              - type: button
+                name: Kan −
+                icon: mdi:chevron-down-box
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: CHANNELDOWN
+              - type: button
+                name: Kan +
+                icon: mdi:chevron-up-box
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: CHANNELUP
+          - type: grid
+            title: Afspelen
+            columns: 4
+            square: false
+            cards:
+              - type: button
+                name: Spoel terug
+                icon: mdi:rewind
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: REWIND
+              - type: button
+                name: Afspelen
+                icon: mdi:play
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: PLAY
+              - type: button
+                name: Pauze
+                icon: mdi:pause
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: PAUSE
+              - type: button
+                name: Spoel vooruit
+                icon: mdi:fast-forward
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: FASTFORWARD
+          - type: grid
+            title: Apps en bronnen
+            columns: 3
+            square: false
+            cards:
+              - type: button
+                name: Live tv
+                icon: mdi:television-classic
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.select_source
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    source: "Live tv"
+              - type: button
+                name: Netflix
+                icon: mdi:netflix
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.select_source
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    source: "Netflix"
+              - type: button
+                name: YouTube
+                icon: mdi:youtube
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.select_source
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    source: "YouTube"
+              - type: button
+                name: Disney+
+                icon: mdi:movie-star
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.select_source
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    source: "Disney+"
+              - type: button
+                name: Prime Video
+                icon: mdi:filmstrip
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.select_source
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    source: "Prime Video"
+              - type: button
+                name: Videoland
+                icon: mdi:filmstrip-box
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.select_source
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    source: "Videoland"
+              - type: button
+                name: NPO Start
+                icon: mdi:television-play
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.select_source
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    source: "NPO Start"
+              - type: button
+                name: HBO Max
+                icon: mdi:movie-open
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.select_source
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    source: "HBO Max"
+              - type: button
+                name: PS5 Gameconsole
+                icon: mdi:sony-playstation
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.select_source
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    source: "PS5 Gameconsole"
+              - type: button
+                name: HDMI 1
+                icon: mdi:video-input-hdmi
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.select_source
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    source: "HDMI 1"
+              - type: button
+                name: HDMI 3
+                icon: mdi:video-input-hdmi
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.select_source
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    source: "HDMI 3"
+              - type: button
+                name: HDMI 4
+                icon: mdi:video-input-hdmi
+                tap_action:
+                  action: perform-action
+                  perform_action: media_player.select_source
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    source: "HDMI 4"

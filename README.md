@@ -41,6 +41,20 @@ Instellingen → Apparaten & diensten → Integratie toevoegen → **MQTT**:
 
 Zigbee2MQTT-apparaten verschijnen daarna automatisch in Home Assistant.
 
+## Testen op macOS
+
+```bash
+scripts/mac/ha.sh up          # start Home Assistant (ook: down, restart, logs, status)
+scripts/mac/install-mdns.sh   # eenmalig: maakt http://smarthome.local beschikbaar op het netwerk
+```
+
+`install-mdns.sh` installeert een LaunchAgent die bij het inloggen `smarthome.local` via Bonjour aankondigt met het
+huidige IP-adres van de Mac, en Home Assistant op poort 80 van dat adres houdt. Verwijderen:
+`scripts/mac/install-mdns.sh --uninstall`. Log: `~/Library/Logs/smarthome-mdns.log`.
+
+`.local`-namen werken op macOS, iOS, Windows 10+ en Linux (met Avahi). Android ondersteunt ze niet overal; gebruik
+daar het IP-adres.
+
 ## Beheer
 
 ```bash
