@@ -1,4 +1,4 @@
-# Stofzuiger pauzeren als iemand die thuis is gebeld wordt.
+# Stofzuiger pauzeren als iemand gebeld wordt die met de Deco in de hal verbonden is.
 #
 # Angelique (Android): de app geeft de telefoonstatus zelf door (sensor.sm_g781b_phone_state:
 # ringing / offhook / idle), dus pauzeren en weer verder gaan werkt volledig automatisch.
@@ -71,16 +71,18 @@ automation:
       gebeurtenis: "{{ trigger.json.gebeurtenis | default('') }}"
     actions:
       - choose:
-          # Telefoon gaat over: pauzeren als hij aan het zuigen is en ik thuis ben
-          # (buiten de deur stoort het geluid niet, dan mag hij gewoon doorgaan).
+          # Telefoon gaat over: pauzeren als hij aan het zuigen is en ik in de buurt ben
+          # (verbonden met de Deco in de hal); anders mag hij gewoon doorgaan.
           - conditions:
               - "{{ gebeurtenis == 'gaat_over' }}"
               - condition: state
                 entity_id: input_boolean.stofzuiger_pauze_bij_gesprek
                 state: "on"
-              - condition: state
-                entity_id: person.stefan
-                state: home
+              # Alleen als mijn iPhone met de Deco in de hal verbonden is (beneden, bij de stofzuiger).
+              - condition: template
+                value_template: >
+                  {{ is_state('device_tracker.deco_iphone_stefan', 'home')
+                     and state_attr('device_tracker.deco_iphone_stefan', 'deco_device') == 'Hallway' }}
               - condition: state
                 entity_id: vacuum.living_room_roborock_q10_s5
                 state: cleaning
@@ -155,9 +157,11 @@ automation:
               - condition: state
                 entity_id: input_boolean.stofzuiger_pauze_bij_gesprek
                 state: "on"
-              - condition: state
-                entity_id: person.angelique
-                state: home
+              # Alleen als haar telefoon met de Deco in de hal verbonden is (beneden, bij de stofzuiger).
+              - condition: template
+                value_template: >
+                  {{ is_state('device_tracker.deco_s20_fe_angelique', 'home')
+                     and state_attr('device_tracker.deco_s20_fe_angelique', 'deco_device') == 'Hallway' }}
               - condition: state
                 entity_id: vacuum.living_room_roborock_q10_s5
                 state: cleaning

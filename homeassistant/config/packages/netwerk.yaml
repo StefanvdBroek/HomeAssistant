@@ -1,0 +1,100 @@
+# Netwerk (TP-Link Deco): meldingen bij storingen en nieuwe apparaten.
+# Dashboard: dashboards/netwerk.yaml (alleen voor Stefan).
+
+automation:
+  # ------------------------------------------------------- internet weg
+  # Zolang het internet weg is kan Home Assistant geen pushmelding sturen; daarom een melding
+  # zodra het terug is, met hoe lang het weg was.
+  - id: netwerk_internet_terug
+    alias: Netwerk - melding als het internet terug is
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.living_room_hallway_deco_internet_online
+        from: "off"
+        to: "on"
+    conditions:
+      - condition: template # korte haperingen negeren
+        value_template: "{{ (now() - trigger.from_state.last_changed).total_seconds() > 60 }}"
+    actions:
+      - variables:
+          minuten: "{{ ((now() - trigger.from_state.last_changed).total_seconds() / 60) | round(0) | int }}"
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🌐 Internet is terug"
+          message: >
+            Het internet was {{ minuten }} minuten weg
+            (vanaf {{ as_local(trigger.from_state.last_changed).strftime('%H:%M') }}).
+          data:
+            url: /dashboard-netwerk/netwerk
+
+  # ---------------------------------------------------------- Deco offline
+  - id: netwerk_deco_offline
+    alias: Netwerk - melding als een Deco offline is
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.living_room_hallway_deco_deco_online
+          - binary_sensor.kamer_elena_bedroom_deco_deco_online
+          - binary_sensor.zolder_office_deco_deco_online
+        to: "off"
+        for: "00:05:00"
+        id: weg
+      - trigger: state
+        entity_id:
+          - binary_sensor.living_room_hallway_deco_deco_online
+          - binary_sensor.kamer_elena_bedroom_deco_deco_online
+          - binary_sensor.zolder_office_deco_deco_online
+        from: "off"
+        to: "on"
+        id: terug
+    conditions:
+      # "terug" alleen melden als hij lang genoeg weg was om een melding te geven
+      - condition: template
+        value_template: >
+          {{ trigger.id == 'weg'
+             or (now() - trigger.from_state.last_changed).total_seconds() > 300 }}
+    actions:
+      - variables:
+          deco: >
+            {{ {'living_room_hallway': 'Hal', 'kamer_elena_bedroom': 'Slaapkamer Elena',
+                'zolder_office': 'Zolder'}.get(trigger.entity_id.split('.')[1].replace('_deco_deco_online', ''),
+                trigger.to_state.name) }}
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "{{ '📶 Deco ' ~ deco ~ (' is offline' if trigger.id == 'weg' else ' is weer online') }}"
+          message: >
+            {% if trigger.id == 'weg' %}De Deco in de {{ deco | lower }} reageert al 5 minuten niet.
+            Apparaten in die buurt hebben mogelijk slechte of geen wifi.{% else %}De Deco in de
+            {{ deco | lower }} werkt weer.{% endif %}
+          data:
+            tag: "deco_{{ trigger.entity_id }}"
+            url: /dashboard-netwerk/netwerk
+
+  # ------------------------------------------------------ nieuw apparaat
+  # De Deco-integratie maakt een tracker aan voor elk apparaat dat voor het eerst op de wifi komt.
+  - id: netwerk_nieuw_apparaat
+    alias: Netwerk - melding bij een nieuw apparaat op de wifi
+    mode: queued
+    triggers:
+      - trigger: event
+        event_type: entity_registry_updated
+        event_data:
+          action: create
+    conditions:
+      - condition: template
+        value_template: >
+          {{ trigger.event.data.entity_id.startswith('device_tracker.')
+             and trigger.event.data.entity_id in integration_entities('tplink_deco') }}
+    actions:
+      - variables:
+          naam: >
+            {{ trigger.event.data.entity_id.split('.')[1]
+               | regex_replace('^(hallway|office|bedroom)_deco_', '') | replace('_', ' ') }}
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🆕 Nieuw apparaat op je wifi"
+          message: "{{ naam }} is voor het eerst verbonden met je netwerk."
+          data:
+            url: /dashboard-netwerk/netwerk

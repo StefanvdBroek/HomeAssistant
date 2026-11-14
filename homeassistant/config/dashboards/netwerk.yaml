@@ -1,0 +1,130 @@
+# Netwerk (TP-Link Deco): internet, de Deco's en alle verbonden apparaten.
+# Alleen voor Stefan: dashboard alleen voor beheerders, weergave alleen voor deze gebruiker.
+title: Netwerk
+views:
+  - title: Netwerk
+    path: netwerk
+    icon: mdi:lan
+    type: sections
+    max_columns: 3
+    visible:
+      - user: d50ef6680816427b8db92f5f48da876a # Stefan
+    badges:
+      - type: entity
+        entity: binary_sensor.living_room_hallway_deco_internet_online
+        name: Internet
+        show_name: true
+      - type: entity
+        entity: sensor.living_room_hallway_deco_total_down
+        name: Binnen
+        show_name: true
+      - type: entity
+        entity: sensor.living_room_hallway_deco_total_up
+        name: Uit
+        show_name: true
+    sections:
+      # ------------------------------------------------------------ deco's
+      - type: grid
+        cards:
+          - type: heading
+            heading: Deco's
+            icon: mdi:access-point-network
+          - type: tile
+            entity: binary_sensor.living_room_hallway_deco_deco_online
+            name: Hal (hoofd)
+            icon: mdi:router-wireless
+            state_content: state
+          - type: tile
+            entity: sensor.living_room_hallway_deco_connected_clients
+            name: Apparaten hal
+            icon: mdi:devices
+          - type: tile
+            entity: binary_sensor.zolder_office_deco_deco_online
+            name: Zolder
+            icon: mdi:router-wireless
+          - type: tile
+            entity: sensor.zolder_office_deco_connected_clients
+            name: Apparaten zolder
+            icon: mdi:devices
+          - type: tile
+            entity: binary_sensor.kamer_elena_bedroom_deco_deco_online
+            name: Slaapkamer Elena
+            icon: mdi:router-wireless
+          - type: tile
+            entity: sensor.kamer_elena_bedroom_deco_connected_clients
+            name: Apparaten slaapkamer
+            icon: mdi:devices
+          - type: tile
+            entity: binary_sensor.living_room_hallway_deco_guest_wifi
+            name: Gastnetwerk
+            icon: mdi:wifi-star
+            grid_options:
+              columns: full
+
+      # ------------------------------------------------------------ thuis
+      - type: grid
+        cards:
+          - type: heading
+            heading: Wie is er thuis
+            icon: mdi:home-account
+          - type: tile
+            entity: person.stefan
+          - type: tile
+            entity: person.angelique
+          - type: markdown
+            grid_options:
+              columns: full
+            content: >
+              {% for p, t in [('Stefan', 'device_tracker.deco_iphone_stefan'),
+                              ('Angelique', 'device_tracker.deco_s20_fe_angelique')] %}
+              **{{ p }}**: {% if is_state(t, 'home') %}op de wifi via Deco
+              *{{ {'Hallway': 'hal', 'Office': 'zolder', 'Bedroom': 'slaapkamer Elena'}.get(state_attr(t, 'deco_device'), state_attr(t, 'deco_device')) }}*{% else %}niet op de wifi{% endif %}
+
+              {% endfor %}
+
+      # ------------------------------------------------------------ verkeer
+      - type: grid
+        cards:
+          - type: heading
+            heading: Verkeer (24 uur)
+            icon: mdi:chart-line
+          - type: history-graph
+            hours_to_show: 24
+            grid_options:
+              columns: full
+            entities:
+              - entity: sensor.living_room_hallway_deco_total_down
+                name: Binnen
+              - entity: sensor.living_room_hallway_deco_total_up
+                name: Uit
+
+      # ------------------------------------------------------------ apparaten
+      - type: grid
+        column_span: 3
+        cards:
+          - type: heading
+            heading: Verbonden apparaten
+            icon: mdi:devices
+          - type: markdown
+            grid_options:
+              columns: full
+            content: >
+              {% set namen = {'Hallway': 'Hal', 'Office': 'Zolder', 'Bedroom': 'Slaapkamer Elena'} %}
+              {% set apparaten = states.device_tracker
+                   | selectattr('attributes.source_type', 'defined')
+                   | selectattr('attributes.source_type', 'eq', 'router')
+                   | selectattr('attributes.device_type', 'defined')
+                   | selectattr('attributes.device_type', 'eq', 'client')
+                   | list %}
+              {% set ns = namespace(rijen=[]) %}
+              {% for a in apparaten | selectattr('state', 'eq', 'home') | sort(attribute='attributes.deco_device') %}
+              {% set ns.rijen = ns.rijen + ['| ' ~ (a.attributes.ui_device_name or a.name) ~ ' | '
+                   ~ namen.get(a.attributes.deco_device, a.attributes.deco_device) ~ ' | '
+                   ~ {'band2_4': '2,4 GHz', 'band5': '5 GHz', 'band6': '6 GHz'}.get(a.attributes.connection_type, a.attributes.connection_type or 'kabel')
+                   ~ ' | ' ~ (a.attributes.down_kilobytes_per_s | round(1)) ~ ' kB/s | '
+                   ~ (a.attributes.up_kilobytes_per_s | round(1)) ~ ' kB/s |'] %}
+              {% endfor %}
+              {{ (['| Apparaat | Deco | Wifi | Binnen | Uit |', '|:--|:--|:--|--:|--:|'] + ns.rijen) | join('\n') }}
+
+              {% set weg = apparaten | selectattr('state', 'ne', 'home') | map(attribute='attributes.ui_device_name') | list %}
+              {% if weg %}*Niet verbonden:* {{ weg | join(', ') }}{% endif %}

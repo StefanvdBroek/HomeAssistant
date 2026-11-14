@@ -51,6 +51,13 @@ lovelace:
       icon: mdi:wallet-membership
       show_in_sidebar: true
       filename: dashboards/klantkaarten.yaml
+    dashboard-netwerk:
+      mode: yaml
+      title: Netwerk
+      icon: mdi:lan
+      show_in_sidebar: true
+      require_admin: true # alleen beheerders; de weergave zelf alleen voor Stefan
+      filename: dashboards/netwerk.yaml
     dashboard-afstandsbediening:
       mode: yaml
       title: Afstandsbediening
