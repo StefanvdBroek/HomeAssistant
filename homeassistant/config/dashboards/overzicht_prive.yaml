@@ -1,0 +1,297 @@
+# Privé-kopie van het dashboard "Overzicht": alleen zichtbaar voor Stefan.
+# (Dashboard alleen voor beheerders, en de weergave alleen voor deze gebruiker.)
+# Overzicht: alles in één oogopslag. Geschikt als startscherm op telefoon of tablet.
+# Details staan op de losse dashboards (Afstandsbediening, Stofzuiger, Verlichting, Wasmachine).
+title: Overzicht (privé)
+views:
+  - title: Thuis
+    path: thuis
+    icon: mdi:home
+    type: sections
+    max_columns: 4
+    visible:
+      - user: d50ef6680816427b8db92f5f48da876a # Stefan
+    badges:
+      - type: entity
+        entity: person.stefan
+        show_name: false
+      - type: entity
+        entity: weather.home
+        show_name: false
+        show_state: true
+      - type: entity
+        entity: sensor.wasmachine_status
+        name: Was
+        show_name: true
+        visibility:
+          - condition: state
+            entity: sensor.wasmachine_status
+            state_not: Uit
+      - type: entity
+        entity: input_boolean.was_in_machine
+        name: Was zit er nog in
+        show_name: true
+        color: amber
+        visibility:
+          - condition: state
+            entity: input_boolean.was_in_machine
+            state: "on"
+    sections:
+      # ------------------------------------------------------------ welkom
+      - type: grid
+        cards:
+          - type: heading
+            heading: Thuis
+            icon: mdi:home
+          - type: markdown
+            grid_options:
+              columns: full
+            content: >
+              {% set uur = now().hour %}
+              ### {{ 'Goedenacht' if uur < 6 else 'Goedemorgen' if uur < 12 else 'Goedemiddag' if uur < 18 else 'Goedenavond' }} 👋
+
+              {% set weer = {'clear-night': 'helder', 'sunny': 'zonnig', 'partlycloudy': 'half bewolkt',
+                'cloudy': 'bewolkt', 'rainy': 'regen', 'pouring': 'zware regen', 'fog': 'mist',
+                'snowy': 'sneeuw', 'snowy-rainy': 'natte sneeuw', 'windy': 'winderig',
+                'lightning': 'onweer', 'lightning-rainy': 'onweer met regen', 'hail': 'hagel'} %}
+              Buiten is het **{{ state_attr('weather.home', 'temperature') | round(0) | int }} °C**
+              en {{ weer.get(states('weather.home'), states('weather.home')) }}.
+              De zon gaat
+              {% if is_state('sun.sun', 'above_horizon') %}onder om **{{ as_timestamp(states('sensor.sun_next_setting')) | timestamp_custom('%H:%M') }}**
+              {% else %}op om **{{ as_timestamp(states('sensor.sun_next_rising')) | timestamp_custom('%H:%M') }}**{% endif %}.
+          # Alleen het beeld; tikken opent het dashboard "Deurbel" met alle instellingen.
+          - type: picture-entity
+            entity: camera.deurbel
+            name: Deurbel
+            camera_view: live
+            show_state: false
+            tap_action:
+              action: navigate
+              navigation_path: /dashboard-deurbel/deurbel
+            grid_options:
+              columns: full
+            visibility:
+              - condition: state
+                entity: camera.deurbel
+                state: streaming
+          - type: picture-entity
+            entity: camera.deurbel
+            name: Deurbel
+            camera_view: auto
+            show_state: false
+            tap_action:
+              action: navigate
+              navigation_path: /dashboard-deurbel/deurbel
+            grid_options:
+              columns: full
+            visibility:
+              - condition: state
+                entity: camera.deurbel
+                state_not: streaming
+          - type: weather-forecast
+            entity: weather.home
+            show_current: false
+            show_forecast: true
+            forecast_type: daily
+            grid_options:
+              columns: full
+
+      # ------------------------------------------------------------ licht en tv
+      - type: grid
+        cards:
+          - type: heading
+            heading: Licht en tv
+            icon: mdi:lightbulb-group
+            tap_action:
+              action: navigate
+              navigation_path: /dashboard-verlichting
+          - type: tile
+            entity: light.lamp_voordeur
+            name: Lamp voordeur
+            features:
+              - type: light-brightness
+            grid_options:
+              columns: full
+          - type: tile
+            entity: media_player.living_room_lg_webos_tv_oled65b29la
+            name: TV woonkamer
+            icon: mdi:television
+            tap_action:
+              action: navigate
+              navigation_path: /dashboard-afstandsbediening
+            features:
+              - type: media-player-volume-slider
+            grid_options:
+              columns: full
+          - type: tile
+            entity: media_player.slaapkamer_julia
+            name: Chromecast Julia
+            icon: mdi:cast
+            grid_options:
+              columns: full
+
+      # ------------------------------------------------------------ klimaat
+      - type: grid
+        cards:
+          - type: heading
+            heading: Klimaat
+            icon: mdi:thermostat
+          - type: tile
+            entity: climate.living_room_woonkamer_air_conditioning
+            name: Airco woonkamer
+            state_content:
+              - hvac_action
+              - current_temperature
+            features:
+              - type: target-temperature
+            grid_options:
+              columns: full
+          - type: tile
+            entity: climate.zolder_zolder_air_conditioning_air_care
+            name: Airco zolder
+            state_content:
+              - state
+              - current_temperature
+            features:
+              - type: target-temperature
+            grid_options:
+              columns: full
+          - type: tile
+            entity: sensor.living_room_woonkamer_air_conditioning_humidity
+            name: Luchtvochtigheid woonkamer
+            icon: mdi:water-percent
+          - type: heading
+            heading: Stroom (airco's en wasmachine)
+            heading_style: subtitle
+            icon: mdi:lightning-bolt
+          - type: tile
+            entity: sensor.stroom_apparaten_vandaag
+            name: Vandaag
+          - type: tile
+            entity: sensor.stroom_apparaten_deze_maand
+            name: Deze maand
+          - type: tile
+            entity: sensor.stroom_apparaten_vorige_maand
+            name: Vorige maand
+            grid_options:
+              columns: full
+
+      # ------------------------------------------------------------ huishouden
+      - type: grid
+        cards:
+          - type: heading
+            heading: Huishouden
+            icon: mdi:home-heart
+          - type: tile
+            entity: sensor.wasmachine_status
+            name: Wasmachine
+            icon: mdi:washing-machine
+            tap_action:
+              action: navigate
+              navigation_path: /dashboard-wasmachine
+          - type: tile
+            entity: sensor.wasmachine_remaining_time
+            name: Was klaar om
+            icon: mdi:timer-outline
+            state_content: state
+            visibility:
+              - condition: state
+                entity: sensor.wasmachine_remaining_time
+                state_not: unknown
+              - condition: state
+                entity: sensor.wasmachine_status
+                state_not: Uit
+          - type: tile
+            entity: input_boolean.was_in_machine
+            name: Was is eruit
+            icon: mdi:tshirt-crew
+            color: amber
+            tap_action:
+              action: perform-action
+              perform_action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.was_in_machine
+            visibility:
+              - condition: state
+                entity: input_boolean.was_in_machine
+                state: "on"
+            grid_options:
+              columns: full
+          - type: tile
+            entity: vacuum.living_room_roborock_q10_s5
+            name: Roborock
+            tap_action:
+              action: navigate
+              navigation_path: /dashboard-stofzuiger
+            features:
+              - type: vacuum-commands
+                commands:
+                  - start_pause
+                  - return_home
+            grid_options:
+              columns: full
+          - type: tile
+            entity: sensor.living_room_roborock_q10_s5_battery
+            name: Accu robot
+          - type: tile
+            entity: input_boolean.stofzuig_programma_actief
+            name: Stofzuigschema
+
+      # ------------------------------------------------------------ gamenieuws
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: GameQuarter
+            icon: mdi:gamepad-variant
+            badges:
+              - type: entity
+                entity: sensor.gamequarter_laatste_bericht
+                show_state: false
+                show_icon: true
+                icon: mdi:open-in-new
+                tap_action:
+                  action: url
+                  url_path: https://www.gamequarter.be/
+          - type: markdown
+            grid_options:
+              columns: full
+            content: >
+              {% set kleur = {'Nieuws': '#eb00a8', 'Review': '#f59e0b', 'Preview': '#6366f1', 'Artikel': '#0d9488'} %}
+              {% set berichten = state_attr('sensor.gamequarter_laatste_bericht', 'berichten') or [] %}
+              {% for b in berichten %}
+              {% set tijd = as_local(as_datetime(b.tijd)) %}
+              <table width="100%"><tr>
+              <td width="56">{% if b.afbeelding %}<img src="{{ b.afbeelding }}" width="48" height="48">{% endif %}</td>
+              <td><a href="{{ b.url }}" target="_blank"><b>{{ b.titel }}</b></a><br>
+              <font color="{{ kleur.get(b.soort, '#888888') }}">● {{ b.soort }}</font>
+              · {{ tijd.strftime('%H:%M') if tijd.date() == now().date() else tijd.strftime('%d-%m %H:%M') }}</td>
+              </tr></table>
+              {% else %}
+              Nog geen berichten opgehaald.
+              {% endfor %}
+
+      # ------------------------------------------------------- gamenieuws wereldwijd
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Gamenieuws wereldwijd
+            icon: mdi:earth
+          - type: markdown
+            grid_options:
+              columns: full
+            content: >
+              {% set kleur = {'IGN': '#bf1313', 'Eurogamer': '#0c7bdc', 'GameSpot': '#e6a100', 'PC Gamer': '#7a1fa2'} %}
+              {% set berichten = state_attr('sensor.gamenieuws_wereldwijd', 'berichten') or [] %}
+              {% for b in berichten %}
+              {% set tijd = as_local(as_datetime(b.tijd)) %}
+              <table width="100%"><tr>
+              <td width="56">{% if b.afbeelding %}<img src="{{ b.afbeelding }}" width="48" height="48">{% endif %}</td>
+              <td><a href="{{ b.url }}" target="_blank"><b>{{ b.titel }}</b></a><br>
+              <font color="{{ kleur.get(b.bron, '#888888') }}">● {{ b.bron }}</font>
+              · {{ tijd.strftime('%H:%M') if tijd.date() == now().date() else tijd.strftime('%d-%m %H:%M') }}</td>
+              </tr></table>
+              {% else %}
+              Nog geen berichten opgehaald.
+              {% endfor %}

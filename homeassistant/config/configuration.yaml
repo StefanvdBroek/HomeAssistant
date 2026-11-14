@@ -25,19 +25,19 @@ lovelace:
       icon: mdi:view-dashboard
       show_in_sidebar: true
       filename: dashboards/overzicht.yaml
+    dashboard-overzicht-prive:
+      mode: yaml
+      title: Overzicht (privé)
+      icon: mdi:view-dashboard-variant
+      show_in_sidebar: true
+      require_admin: true # alleen beheerders; de weergave zelf alleen voor Stefan
+      filename: dashboards/overzicht_prive.yaml
     dashboard-deurbel:
       mode: yaml
       title: Deurbel
       icon: mdi:doorbell-video
       show_in_sidebar: true
       filename: dashboards/deurbel.yaml
-    dashboard-deurbel-prive:
-      mode: yaml
-      title: Deurbel (privé)
-      icon: mdi:doorbell-video
-      show_in_sidebar: true
-      require_admin: true # alleen beheerders; de weergave zelf alleen voor Stefan
-      filename: dashboards/deurbel_prive.yaml
     dashboard-afstandsbediening:
       mode: yaml
       title: Afstandsbediening
