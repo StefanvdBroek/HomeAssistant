@@ -1,0 +1,63 @@
+# Klantkaarten: toevoegen via de Home Assistant-app, tonen op het dashboard "Klantkaarten".
+#   - Takenlijst "Klantkaarten" (todo.klantkaarten): titel = winkel, beschrijving = kaartnummer
+#     (of "qr: <inhoud>" voor een QR-code).
+#   - Foto's: Media > My media > klantkaarten, bestandsnaam = winkel.
+# tools/klantkaarten.py maakt de barcodes en zet de foto's om; de kaartnummers blijven
+# in Home Assistant en komen niet in git.
+
+shell_command:
+  klantkaarten_bijwerken: "python3 /config/tools/klantkaarten.py {{ kaarten }}"
+
+command_line:
+  - sensor:
+      name: Klantkaarten
+      unique_id: klantkaarten_overzicht
+      icon: mdi:wallet-membership
+      command: "cat /config/klantkaarten/index.json 2>/dev/null || echo '{\"aantal\": 0, \"kaarten\": []}'"
+      scan_interval: 3600 # wordt na elke wijziging direct bijgewerkt door de automatisering
+      value_template: "{{ value_json.aantal }}"
+      unit_of_measurement: kaarten
+      json_attributes:
+        - kaarten
+        - bijgewerkt
+
+script:
+  klantkaarten_bijwerken:
+    alias: Klantkaarten bijwerken
+    icon: mdi:refresh
+    mode: queued
+    max: 2
+    sequence:
+      - action: todo.get_items
+        target:
+          entity_id: todo.klantkaarten
+        data:
+          status:
+            - needs_action
+            - completed
+        response_variable: lijst
+      - action: shell_command.klantkaarten_bijwerken
+        data:
+          # base64, zodat leestekens in namen en nummers de opdracht niet breken
+          kaarten: "{{ (lijst['todo.klantkaarten']['items'] | tojson) | base64_encode }}"
+        response_variable: resultaat
+      - action: homeassistant.update_entity
+        target:
+          entity_id: sensor.klantkaarten
+
+automation:
+  - id: klantkaarten_bijwerken
+    alias: Klantkaarten - bijwerken na een wijziging
+    mode: queued
+    max: 2
+    triggers:
+      - trigger: homeassistant
+        event: start
+      # een kaart toegevoegd, verwijderd of afgevinkt
+      - trigger: state
+        entity_id: todo.klantkaarten
+      # een kaart bewerkt of een foto geüpload geeft geen gebeurtenis: daarom ook periodiek
+      - trigger: time_pattern
+        minutes: /2
+    actions:
+      - action: script.klantkaarten_bijwerken

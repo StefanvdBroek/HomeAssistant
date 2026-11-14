@@ -4,6 +4,10 @@
 homeassistant:
   # Losse onderdelen per onderwerp in homeassistant/config/packages/
   packages: !include_dir_named packages
+  # Geüploade media (o.a. foto's van klantkaarten) in de config-map, zodat ze een
+  # nieuwe container overleven. Niet in git.
+  media_dirs:
+    local: /config/media
 
 default_config:
 
@@ -38,6 +42,12 @@ lovelace:
       icon: mdi:doorbell-video
       show_in_sidebar: true
       filename: dashboards/deurbel.yaml
+    dashboard-klantkaarten:
+      mode: yaml
+      title: Klantkaarten
+      icon: mdi:wallet-membership
+      show_in_sidebar: true
+      filename: dashboards/klantkaarten.yaml
     dashboard-afstandsbediening:
       mode: yaml
       title: Afstandsbediening
