@@ -1,0 +1,27 @@
+# Back-ups: Home Assistant maakt elke nacht om 04:45 een versleutelde back-up (7 bewaard).
+# Ingesteld via Instellingen > Systeem > Back-ups; hier alleen een melding als het misgaat.
+
+automation:
+  - id: backup_controle
+    alias: Back-up - melding als de laatste back-up te oud is
+    mode: single
+    triggers:
+      - trigger: time
+        at: "07:00:00"
+    conditions:
+      - condition: template
+        value_template: >
+          {% set laatste = states('sensor.backup_last_successful_automatic_backup') %}
+          {{ laatste in ['unknown', 'unavailable', 'none']
+             or (now() - as_datetime(laatste)).total_seconds() > 26 * 3600 }}
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "💾 Back-up mislukt"
+          message: >
+            De automatische back-up van vannacht is niet gelukt
+            (laatste geslaagde: {{ states('sensor.backup_last_successful_automatic_backup')
+            | as_datetime | as_local | default('onbekend') }}).
+            Kijk bij Instellingen > Systeem > Back-ups.
+          data:
+            url: /config/backup

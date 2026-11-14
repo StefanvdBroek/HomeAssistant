@@ -51,19 +51,26 @@ views:
           - type: markdown
             grid_options:
               columns: full
-            content: >
+            # Letterlijke tekst (|): elke regel blijft een regel, anders breekt de markdown.
+            content: |
               {% set kaarten = state_attr('sensor.klantkaarten', 'kaarten') or [] %}
               {% for k in kaarten %}
               ## {{ k.naam }}
 
-              {% if k.barcode %}<img src="{{ k.barcode }}" width="{{ '60%' if k.soort == 'QR-code' else '100%' }}">{% endif %}
+              {% if k.barcode %}![{{ k.naam }}]({{ k.barcode }})
 
-              {% if k.foto %}<img src="{{ k.foto }}" width="100%">{% endif %}
+              {% endif %}
+              {% if k.foto %}![{{ k.naam }}]({{ k.foto }})
 
-              {% if k.melding %}<font color="#d97706">⚠️ {{ k.melding }}</font>{% endif %}
-              {% if k.soort %}<font color="#888888">{{ k.soort }}</font>{% endif %}
+              {% endif %}
+              {% if k.melding %}⚠️ *{{ k.melding }}*
 
-              {% if not loop.last %}<hr>{% endif %}
+              {% endif %}
+              {% if k.soort %}<font color="#888888">{{ k.soort }}</font>
+
+              {% endif %}
+              {% if not loop.last %}---{% endif %}
+
               {% else %}
               Nog geen klantkaarten. Vul hierboven de **winkel** in en daarna het **kaartnummer**
               (💾 Opslaan) of maak een **foto** van de kaart (📷 Foto maken). Een QR-code: begin het
