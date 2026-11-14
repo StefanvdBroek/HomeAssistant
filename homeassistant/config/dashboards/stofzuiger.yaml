@@ -1,0 +1,126 @@
+# Dashboard voor de Roborock Q10 S5.
+# Per ruimte schoonmaken werkt via vacuum.clean_area. Koppel daarvoor eenmalig de kamers van de robot
+# aan de ruimtes in Home Assistant: open de stofzuiger-entiteit > tandwiel (instellingen) > kamers/ruimtes.
+title: Stofzuiger
+views:
+  - title: Roborock
+    path: roborock
+    icon: mdi:robot-vacuum
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: tile
+            entity: vacuum.living_room_roborock_q10_s5
+            name: Roborock
+            vertical: false
+            features:
+              - type: vacuum-commands
+                commands:
+                  - start_pause
+                  - stop
+                  - return_home
+                  - locate
+          - type: glance
+            show_name: true
+            entities:
+              - entity: sensor.living_room_roborock_q10_s5_status
+                name: Status
+              - entity: sensor.living_room_roborock_q10_s5_battery
+                name: Accu
+              - entity: sensor.living_room_roborock_q10_s5_cleaning_progress
+                name: Voortgang
+              - entity: sensor.living_room_roborock_q10_s5_cleaning_area
+                name: Oppervlak
+          - type: tile
+            entity: select.living_room_roborock_q10_s5_cleaning_mode
+            name: Schoonmaakmodus
+            features:
+              - type: select-options
+
+      - type: grid
+        title: Ruimte schoonmaken
+        columns: 3
+        square: false
+        cards:
+          - type: button
+            name: Woonkamer
+            icon: mdi:sofa
+            tap_action:
+              action: perform-action
+              perform_action: vacuum.clean_area
+              target:
+                entity_id: vacuum.living_room_roborock_q10_s5
+              data:
+                cleaning_area_id:
+                  - living_room
+              confirmation:
+                text: Woonkamer schoonmaken?
+          - type: button
+            name: Keuken
+            icon: mdi:silverware-fork-knife
+            tap_action:
+              action: perform-action
+              perform_action: vacuum.clean_area
+              target:
+                entity_id: vacuum.living_room_roborock_q10_s5
+              data:
+                cleaning_area_id:
+                  - kitchen
+              confirmation:
+                text: Keuken schoonmaken?
+          - type: button
+            name: Slaapkamer
+            icon: mdi:bed
+            tap_action:
+              action: perform-action
+              perform_action: vacuum.clean_area
+              target:
+                entity_id: vacuum.living_room_roborock_q10_s5
+              data:
+                cleaning_area_id:
+                  - bedroom
+              confirmation:
+                text: Slaapkamer schoonmaken?
+
+      - type: picture-entity
+        entity: image.living_room_roborock_q10_s5_map
+        name: Kaart
+        show_state: false
+
+      - type: entities
+        title: Instellingen
+        entities:
+          - entity: switch.living_room_roborock_q10_s5_do_not_disturb
+            name: Niet storen
+          - entity: switch.living_room_roborock_q10_s5_dust_collection
+            name: Automatisch legen
+          - entity: switch.living_room_roborock_q10_s5_child_lock
+            name: Kinderslot
+          - entity: switch.living_room_roborock_q10_s5_indicator_light
+            name: Indicatielampje
+          - entity: number.living_room_roborock_q10_s5_volume
+            name: Volume
+          - entity: button.living_room_roborock_q10_s5_empty_dustbin
+            name: Stofbak nu legen
+
+      - type: entities
+        title: Onderhoud (gebruikte uren)
+        entities:
+          - entity: sensor.living_room_roborock_q10_s5_main_brush_time_used
+            name: Hoofdborstel
+          - entity: sensor.living_room_roborock_q10_s5_side_brush_time_used
+            name: Zijborstel
+          - entity: sensor.living_room_roborock_q10_s5_filter_time_used
+            name: Filter
+          - entity: sensor.living_room_roborock_q10_s5_sensor_time_used
+            name: Sensoren
+
+      - type: entities
+        title: Totalen
+        entities:
+          - entity: sensor.living_room_roborock_q10_s5_total_cleaning_count
+            name: Aantal schoonmaakbeurten
+          - entity: sensor.living_room_roborock_q10_s5_total_cleaning_area
+            name: Totaal oppervlak
+          - entity: sensor.living_room_roborock_q10_s5_total_cleaning_time
+            name: Totale tijd
