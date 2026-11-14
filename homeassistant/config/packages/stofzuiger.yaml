@@ -1,6 +1,7 @@
 # Automatisch stofzuigprogramma voor de Roborock Q10 S5.
-# Alles is in te stellen via het dashboard "Stofzuiger": aan/uit, tijd, dagen en ruimtes.
-# Geen ruimte gekozen = het hele huis.
+# Alles is in te stellen via het dashboard "Stofzuiger": aan/uit, tijd en dagen.
+# De robot staat in de woonkamer en zijn kaart heeft geen kamerindeling: hij zuigt altijd de
+# hele woonkamer.
 
 input_boolean:
   stofzuig_programma_actief:
@@ -13,9 +14,6 @@ input_boolean:
   stofzuig_vr: { name: Vrijdag, icon: "mdi:alpha-v-circle" }
   stofzuig_za: { name: Zaterdag, icon: "mdi:alpha-z-circle" }
   stofzuig_zo: { name: Zondag, icon: "mdi:alpha-z-circle" }
-  stofzuig_woonkamer: { name: Woonkamer, icon: "mdi:sofa" }
-  stofzuig_keuken: { name: Keuken, icon: "mdi:silverware-fork-knife" }
-  stofzuig_slaapkamer: { name: Slaapkamer, icon: "mdi:bed" }
 
 input_datetime:
   stofzuig_tijd:
@@ -38,37 +36,14 @@ script:
     alias: Stofzuigprogramma uitvoeren
     icon: mdi:robot-vacuum
     mode: single
-    variables:
-      ruimtes: >
-        {% set kaart = {
-          'input_boolean.stofzuig_woonkamer': 'living_room',
-          'input_boolean.stofzuig_keuken': 'kitchen',
-          'input_boolean.stofzuig_slaapkamer': 'bedroom'
-        } %}
-        {% set ns = namespace(lijst=[]) %}
-        {% for schakelaar, ruimte in kaart.items() if is_state(schakelaar, 'on') %}
-          {% set ns.lijst = ns.lijst + [ruimte] %}
-        {% endfor %}
-        {{ ns.lijst }}
     sequence:
-      - if:
-          - condition: template
-            value_template: "{{ ruimtes | count > 0 }}"
-        then:
-          - action: vacuum.clean_area
-            target:
-              entity_id: vacuum.living_room_roborock_q10_s5
-            data:
-              cleaning_area_id: "{{ ruimtes }}"
-        else:
-          - action: vacuum.start
-            target:
-              entity_id: vacuum.living_room_roborock_q10_s5
+      - action: vacuum.start
+        target:
+          entity_id: vacuum.living_room_roborock_q10_s5
       - action: logbook.log
         data:
           name: Stofzuigprogramma
-          message: >
-            gestart ({{ ruimtes | join(', ') if ruimtes else 'hele huis' }})
+          message: gestart (woonkamer)
 
 automation:
   - id: stofzuig_programma

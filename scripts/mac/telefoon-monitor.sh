@@ -43,6 +43,8 @@ echo "$(date '+%F %T') telefoon-monitor gestart (Home Assistant: $HA_URL)"
     OR eventMessage CONTAINS "Handle incoming CallDisconnected message"
     OR eventMessage CONTAINS "sendCallDisconnectedMessageToClientForCall")' |
 while IFS= read -r regel; do
+  # De eerste regel van log stream herhaalt het filter (met dezelfde zoekwoorden): overslaan.
+  [[ "$regel" == *"callservicesd["* ]] || continue
   case "$regel" in
     *"IncomingCall message"* | *reportNewIncomingCallWithUUID*) meld gaat_over ;;
     *CallAnsweredElsewhere*) meld elders_opgenomen ;;

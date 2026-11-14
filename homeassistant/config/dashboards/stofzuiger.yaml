@@ -1,6 +1,5 @@
 # Dashboard voor de Roborock Q10 S5.
-# Per ruimte schoonmaken werkt via vacuum.clean_area. Koppel daarvoor eenmalig de kamers van de robot
-# aan de ruimtes in Home Assistant: open de stofzuiger-entiteit > tandwiel (instellingen) > kamers/ruimtes.
+# De robot staat in de woonkamer; zijn kaart heeft geen kamerindeling, dus schoonmaken = de woonkamer.
 title: Stofzuiger
 views:
   - title: Roborock
@@ -37,50 +36,16 @@ views:
             features:
               - type: select-options
 
-      - type: grid
-        title: Ruimte schoonmaken
-        columns: 3
-        square: false
-        cards:
-          - type: button
-            name: Woonkamer
-            icon: mdi:sofa
-            tap_action:
-              action: perform-action
-              perform_action: vacuum.clean_area
-              target:
-                entity_id: vacuum.living_room_roborock_q10_s5
-              data:
-                cleaning_area_id:
-                  - living_room
-              confirmation:
-                text: Woonkamer schoonmaken?
-          - type: button
-            name: Keuken
-            icon: mdi:silverware-fork-knife
-            tap_action:
-              action: perform-action
-              perform_action: vacuum.clean_area
-              target:
-                entity_id: vacuum.living_room_roborock_q10_s5
-              data:
-                cleaning_area_id:
-                  - kitchen
-              confirmation:
-                text: Keuken schoonmaken?
-          - type: button
-            name: Slaapkamer
-            icon: mdi:bed
-            tap_action:
-              action: perform-action
-              perform_action: vacuum.clean_area
-              target:
-                entity_id: vacuum.living_room_roborock_q10_s5
-              data:
-                cleaning_area_id:
-                  - bedroom
-              confirmation:
-                text: Slaapkamer schoonmaken?
+      - type: button
+        name: Woonkamer schoonmaken
+        icon: mdi:sofa
+        tap_action:
+          action: perform-action
+          perform_action: vacuum.start
+          target:
+            entity_id: vacuum.living_room_roborock_q10_s5
+          confirmation:
+            text: Woonkamer schoonmaken?
 
       - type: vertical-stack
         cards:
@@ -109,14 +74,6 @@ views:
               - { type: button, entity: input_boolean.stofzuig_vr, name: Vr, show_icon: false, tap_action: { action: toggle } }
               - { type: button, entity: input_boolean.stofzuig_za, name: Za, show_icon: false, tap_action: { action: toggle } }
               - { type: button, entity: input_boolean.stofzuig_zo, name: Zo, show_icon: false, tap_action: { action: toggle } }
-          - type: grid
-            title: Ruimtes (niets gekozen = hele huis)
-            columns: 3
-            square: false
-            cards:
-              - { type: button, entity: input_boolean.stofzuig_woonkamer, tap_action: { action: toggle } }
-              - { type: button, entity: input_boolean.stofzuig_keuken, tap_action: { action: toggle } }
-              - { type: button, entity: input_boolean.stofzuig_slaapkamer, tap_action: { action: toggle } }
           - type: button
             name: Programma nu uitvoeren
             icon: mdi:play-circle
