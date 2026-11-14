@@ -1,4 +1,9 @@
-# Stofzuiger pauzeren als de iPhone gebeld wordt en ik thuis ben.
+# Stofzuiger pauzeren als iemand die thuis is gebeld wordt.
+#
+# Angelique (Android): de app geeft de telefoonstatus zelf door (sensor.sm_g781b_phone_state:
+# ringing / offhook / idle), dus pauzeren en weer verder gaan werkt volledig automatisch.
+#
+# Stefan (iPhone):
 #
 # De iPhone zegt zelf niet dat hij gebeld wordt. De Mac wel (Gesprekken van iPhone):
 # scripts/mac/telefoon-monitor.sh leest dat uit het logboek van macOS en roept deze webhook aan
@@ -10,7 +15,7 @@
 
 input_boolean:
   stofzuiger_pauze_bij_gesprek:
-    name: Pauzeren als ik gebeld word
+    name: Pauzeren bij een telefoongesprek
     icon: mdi:phone-ring
   stofzuiger_gepauzeerd_door_gesprek:
     name: Stofzuiger gepauzeerd door gesprek
@@ -120,6 +125,60 @@ automation:
               - condition: state
                 entity_id: input_boolean.stofzuiger_gesprek_opgenomen
                 state: "off"
+              - condition: template # niet als Angelique nog aan de telefoon is
+                value_template: "{{ states('sensor.sm_g781b_phone_state') not in ['ringing', 'offhook'] }}"
+            sequence:
+              - delay: "00:00:05"
+              - action: script.stofzuiger_verder_na_gesprek
+
+  # ------------------------------------------------- Angelique (Android)
+  - id: stofzuiger_telefoon_angelique
+    alias: Stofzuiger - pauzeren bij telefoongesprek Angelique
+    mode: queued
+    max: 5
+    triggers:
+      - trigger: state
+        entity_id: sensor.sm_g781b_phone_state
+        to:
+          - ringing
+          - offhook
+        id: gesprek
+      - trigger: state
+        entity_id: sensor.sm_g781b_phone_state
+        to: idle
+        id: klaar
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: gesprek
+              - condition: state
+                entity_id: input_boolean.stofzuiger_pauze_bij_gesprek
+                state: "on"
+              - condition: state
+                entity_id: person.angelique
+                state: home
+              - condition: state
+                entity_id: vacuum.living_room_roborock_q10_s5
+                state: cleaning
+            sequence:
+              - action: vacuum.pause
+                target:
+                  entity_id: vacuum.living_room_roborock_q10_s5
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.stofzuiger_gepauzeerd_door_gesprek
+
+          # Gesprek voorbij (of gemist): verder, tenzij Stefan intussen nog belt.
+          - conditions:
+              - condition: trigger
+                id: klaar
+              - condition: state
+                entity_id: input_boolean.stofzuiger_gepauzeerd_door_gesprek
+                state: "on"
+              - condition: state
+                entity_id: input_boolean.stofzuiger_gesprek_opgenomen
+                state: "off"
             sequence:
               - delay: "00:00:05"
               - action: script.stofzuiger_verder_na_gesprek
@@ -137,6 +196,13 @@ automation:
         entity_id: input_boolean.stofzuiger_gepauzeerd_door_gesprek
         to: "on"
         for: "00:10:00"
+        id: vangnet
+    conditions:
+      # Het vangnet is voor Stefans iPhone (einde onbekend); Angelique's gesprek is wel te volgen.
+      - condition: template
+        value_template: >
+          {{ trigger.id != 'vangnet'
+             or states('sensor.sm_g781b_phone_state') not in ['ringing', 'offhook'] }}
     actions:
       - action: script.stofzuiger_verder_na_gesprek
 
