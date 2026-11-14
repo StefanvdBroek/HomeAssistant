@@ -1,0 +1,96 @@
+# Automatisch stofzuigprogramma voor de Roborock Q10 S5.
+# Alles is in te stellen via het dashboard "Stofzuiger": aan/uit, tijd, dagen en ruimtes.
+# Geen ruimte gekozen = het hele huis.
+
+input_boolean:
+  stofzuig_programma_actief:
+    name: Programma actief
+    icon: mdi:calendar-clock
+  stofzuig_ma: { name: Maandag, icon: "mdi:alpha-m-circle" }
+  stofzuig_di: { name: Dinsdag, icon: "mdi:alpha-d-circle" }
+  stofzuig_wo: { name: Woensdag, icon: "mdi:alpha-w-circle" }
+  stofzuig_do: { name: Donderdag, icon: "mdi:alpha-d-circle" }
+  stofzuig_vr: { name: Vrijdag, icon: "mdi:alpha-v-circle" }
+  stofzuig_za: { name: Zaterdag, icon: "mdi:alpha-z-circle" }
+  stofzuig_zo: { name: Zondag, icon: "mdi:alpha-z-circle" }
+  stofzuig_woonkamer: { name: Woonkamer, icon: "mdi:sofa" }
+  stofzuig_keuken: { name: Keuken, icon: "mdi:silverware-fork-knife" }
+  stofzuig_slaapkamer: { name: Slaapkamer, icon: "mdi:bed" }
+
+input_datetime:
+  stofzuig_tijd:
+    name: Starttijd
+    has_date: false
+    has_time: true
+    icon: mdi:clock-outline
+
+input_number:
+  stofzuig_min_accu:
+    name: Minimale accu
+    min: 20
+    max: 100
+    step: 5
+    unit_of_measurement: "%"
+    icon: mdi:battery-50
+
+script:
+  stofzuig_programma_uitvoeren:
+    alias: Stofzuigprogramma uitvoeren
+    icon: mdi:robot-vacuum
+    mode: single
+    variables:
+      ruimtes: >
+        {% set kaart = {
+          'input_boolean.stofzuig_woonkamer': 'living_room',
+          'input_boolean.stofzuig_keuken': 'kitchen',
+          'input_boolean.stofzuig_slaapkamer': 'bedroom'
+        } %}
+        {% set ns = namespace(lijst=[]) %}
+        {% for schakelaar, ruimte in kaart.items() if is_state(schakelaar, 'on') %}
+          {% set ns.lijst = ns.lijst + [ruimte] %}
+        {% endfor %}
+        {{ ns.lijst }}
+    sequence:
+      - if:
+          - condition: template
+            value_template: "{{ ruimtes | count > 0 }}"
+        then:
+          - action: vacuum.clean_area
+            target:
+              entity_id: vacuum.living_room_roborock_q10_s5
+            data:
+              cleaning_area_id: "{{ ruimtes }}"
+        else:
+          - action: vacuum.start
+            target:
+              entity_id: vacuum.living_room_roborock_q10_s5
+      - action: logbook.log
+        data:
+          name: Stofzuigprogramma
+          message: >
+            gestart ({{ ruimtes | join(', ') if ruimtes else 'hele huis' }})
+
+automation:
+  - id: stofzuig_programma
+    alias: Stofzuiger - automatisch programma
+    description: Start de Roborock op de ingestelde tijd en dagen (dashboard Stofzuiger).
+    mode: single
+    triggers:
+      - trigger: time
+        at: input_datetime.stofzuig_tijd
+    conditions:
+      - condition: state
+        entity_id: input_boolean.stofzuig_programma_actief
+        state: "on"
+      - condition: template
+        value_template: >
+          {{ is_state('input_boolean.stofzuig_' ~ ['ma','di','wo','do','vr','za','zo'][now().weekday()], 'on') }}
+      - condition: state
+        entity_id: vacuum.living_room_roborock_q10_s5
+        state: docked
+      - condition: template
+        value_template: >
+          {{ states('sensor.living_room_roborock_q10_s5_battery') | float(0)
+             >= states('input_number.stofzuig_min_accu') | float(50) }}
+    actions:
+      - action: script.stofzuig_programma_uitvoeren

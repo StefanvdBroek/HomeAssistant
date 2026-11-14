@@ -1,6 +1,10 @@
 # Basisconfiguratie van Home Assistant.
 # De meeste integraties stel je in via de webinterface (Instellingen > Apparaten & diensten).
 
+homeassistant:
+  # Losse onderdelen per onderwerp in homeassistant/config/packages/
+  packages: !include_dir_named packages
+
 default_config:
 
 automation: !include automations.yaml

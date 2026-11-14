@@ -82,6 +82,51 @@ views:
               confirmation:
                 text: Slaapkamer schoonmaken?
 
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: Automatisch programma
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.stofzuig_programma_actief
+              - entity: input_datetime.stofzuig_tijd
+              - entity: input_number.stofzuig_min_accu
+              - entity: automation.stofzuiger_automatisch_programma
+                name: Laatst gestart
+                secondary_info: last-triggered
+                type: attribute
+                attribute: last_triggered
+                format: relative
+          - type: grid
+            title: Dagen
+            columns: 7
+            square: false
+            cards:
+              - { type: button, entity: input_boolean.stofzuig_ma, name: Ma, show_icon: false, tap_action: { action: toggle } }
+              - { type: button, entity: input_boolean.stofzuig_di, name: Di, show_icon: false, tap_action: { action: toggle } }
+              - { type: button, entity: input_boolean.stofzuig_wo, name: Wo, show_icon: false, tap_action: { action: toggle } }
+              - { type: button, entity: input_boolean.stofzuig_do, name: Do, show_icon: false, tap_action: { action: toggle } }
+              - { type: button, entity: input_boolean.stofzuig_vr, name: Vr, show_icon: false, tap_action: { action: toggle } }
+              - { type: button, entity: input_boolean.stofzuig_za, name: Za, show_icon: false, tap_action: { action: toggle } }
+              - { type: button, entity: input_boolean.stofzuig_zo, name: Zo, show_icon: false, tap_action: { action: toggle } }
+          - type: grid
+            title: Ruimtes (niets gekozen = hele huis)
+            columns: 3
+            square: false
+            cards:
+              - { type: button, entity: input_boolean.stofzuig_woonkamer, tap_action: { action: toggle } }
+              - { type: button, entity: input_boolean.stofzuig_keuken, tap_action: { action: toggle } }
+              - { type: button, entity: input_boolean.stofzuig_slaapkamer, tap_action: { action: toggle } }
+          - type: button
+            name: Programma nu uitvoeren
+            icon: mdi:play-circle
+            show_state: false
+            tap_action:
+              action: perform-action
+              perform_action: script.stofzuig_programma_uitvoeren
+              confirmation:
+                text: Het programma nu starten met de gekozen ruimtes?
+
       - type: picture-entity
         entity: image.living_room_roborock_q10_s5_map
         name: Kaart
