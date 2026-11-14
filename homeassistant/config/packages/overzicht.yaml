@@ -1,0 +1,33 @@
+# Sensoren voor het dashboard "Overzicht": samenvattingen over meerdere apparaten.
+
+template:
+  - sensor:
+      # Stroomverbruik van de gekoppelde apparaten (airco's en wasmachine), in kWh.
+      # LG ThinQ levert Wh; dit telt ze op. Het verbruik van de rest van het huis zit hier niet in.
+      - name: Stroom apparaten vandaag
+        unique_id: overzicht_stroom_vandaag_kwh
+        unit_of_measurement: kWh
+        device_class: energy
+        icon: mdi:lightning-bolt
+        state: >
+          {{ ((states('sensor.living_room_woonkamer_air_conditioning_energy_today') | float(0)
+             + states('sensor.zolder_zolder_air_conditioning_air_care_energy_today') | float(0)
+             + states('sensor.wasmachine_energy_today') | float(0)) / 1000) | round(2) }}
+      - name: Stroom apparaten deze maand
+        unique_id: overzicht_stroom_deze_maand_kwh
+        unit_of_measurement: kWh
+        device_class: energy
+        icon: mdi:lightning-bolt
+        state: >
+          {{ ((states('sensor.living_room_woonkamer_air_conditioning_energy_this_month') | float(0)
+             + states('sensor.zolder_zolder_air_conditioning_air_care_energy_this_month') | float(0)
+             + states('sensor.wasmachine_energy_this_month') | float(0)) / 1000) | round(1) }}
+      - name: Stroom apparaten vorige maand
+        unique_id: overzicht_stroom_vorige_maand_kwh
+        unit_of_measurement: kWh
+        device_class: energy
+        icon: mdi:lightning-bolt
+        state: >
+          {{ ((states('sensor.living_room_woonkamer_air_conditioning_energy_last_month') | float(0)
+             + states('sensor.zolder_zolder_air_conditioning_air_care_energy_last_month') | float(0)
+             + states('sensor.wasmachine_energy_last_month') | float(0)) / 1000) | round(1) }}

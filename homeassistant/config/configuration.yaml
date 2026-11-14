@@ -14,6 +14,12 @@ scene: !include scenes.yaml
 # Dashboards die als YAML in git staan (homeassistant/config/dashboards/).
 lovelace:
   dashboards:
+    dashboard-overzicht:
+      mode: yaml
+      title: Overzicht
+      icon: mdi:view-dashboard
+      show_in_sidebar: true
+      filename: dashboards/overzicht.yaml
     dashboard-afstandsbediening:
       mode: yaml
       title: Afstandsbediening
