@@ -116,15 +116,23 @@ views:
                    | selectattr('attributes.device_type', 'defined')
                    | selectattr('attributes.device_type', 'eq', 'client')
                    | list %}
+              {% set laatst = state_attr('sensor.netwerk_laatst_actief', 'apparaten') or {} %}
               {% set ns = namespace(rijen=[]) %}
               {% for a in apparaten | selectattr('state', 'eq', 'home') | sort(attribute='attributes.deco_device') %}
+              {% set t = as_datetime(laatst.get(a.entity_id)) if laatst.get(a.entity_id) else none %}
+              {% if t is none %}{% set actief = '–' %}
+              {% elif (now() - t).total_seconds() < 90 %}{% set actief = '**nu**' %}
+              {% elif (now() - t).total_seconds() < 3600 %}{% set actief = ((now() - t).total_seconds() // 60) | int ~ ' min geleden' %}
+              {% elif as_local(t).date() == now().date() %}{% set actief = 'vandaag ' ~ as_local(t).strftime('%H:%M') %}
+              {% elif (now().date() - as_local(t).date()).days == 1 %}{% set actief = 'gisteren ' ~ as_local(t).strftime('%H:%M') %}
+              {% else %}{% set actief = as_local(t).strftime('%d-%m %H:%M') %}{% endif %}
               {% set ns.rijen = ns.rijen + ['| ' ~ (a.name | regex_replace('^(Hallway|Office|Bedroom) Deco ', '')) ~ ' | '
                    ~ namen.get(a.attributes.deco_device, a.attributes.deco_device) ~ ' | '
                    ~ {'band2_4': '2,4 GHz', 'band5': '5 GHz', 'band6': '6 GHz'}.get(a.attributes.connection_type, a.attributes.connection_type or 'kabel')
                    ~ ' | ' ~ (a.attributes.down_kilobytes_per_s | round(1)) ~ ' kB/s | '
-                   ~ (a.attributes.up_kilobytes_per_s | round(1)) ~ ' kB/s |'] %}
+                   ~ (a.attributes.up_kilobytes_per_s | round(1)) ~ ' kB/s | ' ~ actief ~ ' |'] %}
               {% endfor %}
-              {{ (['| Apparaat | Deco | Wifi | Binnen | Uit |', '|:--|:--|:--|--:|--:|'] + ns.rijen) | join('\n') }}
+              {{ (['| Apparaat | Deco | Wifi | Binnen | Uit | Laatst actief |', '|:--|:--|:--|--:|--:|:--|'] + ns.rijen) | join('\n') }}
 
               {% set weg = apparaten | selectattr('state', 'ne', 'home') | map(attribute='name') | map('regex_replace', '^(Hallway|Office|Bedroom) Deco ', '') | list %}
               {% if weg %}*Niet verbonden:* {{ weg | join(', ') }}{% endif %}

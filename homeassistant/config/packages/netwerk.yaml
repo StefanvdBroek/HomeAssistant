@@ -1,5 +1,35 @@
-# Netwerk (TP-Link Deco): meldingen bij storingen en nieuwe apparaten.
+# Netwerk (TP-Link Deco): meldingen bij storingen en nieuwe apparaten, en per apparaat
+# wanneer het voor het laatst data gebruikte.
 # Dashboard: dashboards/netwerk.yaml (alleen voor Stefan).
+
+template:
+  # Houdt per wifi-apparaat bij wanneer het voor het laatst data gebruikte. De Deco meet het
+  # verbruik per 30 seconden; vanaf 1 kB/s (binnen + uit) telt een apparaat als actief.
+  # Een trigger-sensor bewaart zijn gegevens ook na een herstart van Home Assistant.
+  - trigger:
+      - trigger: time_pattern
+        seconds: /30
+    sensor:
+      - name: Netwerk laatst actief
+        unique_id: netwerk_laatst_actief
+        icon: mdi:clock-check-outline
+        state: "{{ now().isoformat() }}"
+        device_class: timestamp
+        attributes:
+          apparaten: >
+            {% set oud = this.attributes.apparaten if this.attributes is defined
+                         and this.attributes.apparaten is mapping else {} %}
+            {% set ns = namespace(lijst=oud.items() | list) %}
+            {% for a in states.device_tracker
+                 | selectattr('attributes.device_type', 'defined')
+                 | selectattr('attributes.device_type', 'eq', 'client')
+                 | selectattr('state', 'eq', 'home') %}
+              {% if (a.attributes.down_kilobytes_per_s | float(0)) + (a.attributes.up_kilobytes_per_s | float(0)) >= 1 %}
+                {% set ns.lijst = ns.lijst | rejectattr('0', 'eq', a.entity_id) | list
+                                  + [(a.entity_id, now().isoformat())] %}
+              {% endif %}
+            {% endfor %}
+            {{ dict(ns.lijst) }}
 
 automation:
   # ------------------------------------------------------- internet weg
