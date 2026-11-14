@@ -64,7 +64,7 @@ views:
                 entity: sensor.deurbel_battery_percentage
                 show_state: true
                 show_icon: true
-          # Laatste foto, of live beeld zodra de stream loopt (knop hieronder).
+          # Laatste foto, of live beeld zodra de stream loopt (knop hieronder; stopt na 3 min vanzelf).
           - type: picture-entity
             entity: camera.deurbel
             name: Deurbel
@@ -107,22 +107,6 @@ views:
               - condition: state
                 entity: camera.deurbel
                 state_not: streaming
-          - type: button
-            name: Stop live beeld
-            icon: mdi:video-off
-            show_state: false
-            tap_action:
-              action: perform-action
-              perform_action: camera.turn_off
-              target:
-                entity_id: camera.deurbel
-            grid_options:
-              columns: full
-              rows: 1
-            visibility:
-              - condition: state
-                entity: camera.deurbel
-                state: streaming
           - type: tile
             entity: select.homebase_guard_mode
             name: Beveiliging
