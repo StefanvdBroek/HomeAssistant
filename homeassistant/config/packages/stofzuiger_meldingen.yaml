@@ -1,0 +1,168 @@
+# Meldingen voor de Roborock Q10 S5 op de iPhone.
+#
+# Let op: Home Assistant ziet bij de Q10 wél dát de robot een fout heeft, maar niet welke
+# (vast, stofzak vol, borstel geblokkeerd, ...). Details staan in de Roborock-app.
+#
+# Vervangadviezen (gebruikte uren) volgens Roborock; pas aan in de variabelen hieronder.
+
+counter:
+  stofzak_leegbeurten:
+    name: Leegbeurten sinds nieuwe stofzak
+    icon: mdi:delete-variant
+    step: 1
+
+automation:
+  # ---------------------------------------------------------------- fout / vast
+  - id: stofzuiger_melding_fout
+    alias: Stofzuiger - melding bij fout
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: vacuum.living_room_roborock_q10_s5
+        to: error
+        for: "00:01:00"
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🚨 Roborock heeft een probleem"
+          message: >
+            De robot is gestopt met een foutmelding (bijv. vast, stofzak vol of borstel
+            geblokkeerd). Accu: {{ states('sensor.living_room_roborock_q10_s5_battery') }}%.
+            Bekijk de Roborock-app voor de precieze fout.
+          data:
+            url: /dashboard-stofzuiger/roborock
+            push:
+              interruption-level: time-sensitive
+
+  # ---------------------------------------------------------- lijkt vast te zitten
+  - id: stofzuiger_melding_te_lang_bezig
+    alias: Stofzuiger - melding als hij te lang bezig is
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: vacuum.living_room_roborock_q10_s5
+        to:
+          - cleaning
+          - returning
+          - paused
+        for: "03:00:00"
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🤔 Roborock is al 3 uur niet terug"
+          message: >
+            Status: {{ states('vacuum.living_room_roborock_q10_s5') }},
+            accu {{ states('sensor.living_room_roborock_q10_s5_battery') }}%.
+            Misschien zit hij vast of kan hij het dock niet vinden.
+          data:
+            url: /dashboard-stofzuiger/roborock
+
+  # ------------------------------------------------------- stofzak (dock) bijna vol
+  # Elke schoonmaakbeurt met automatisch legen telt als één leegbeurt.
+  - id: stofzuiger_stofzak_tellen
+    alias: Stofzuiger - leegbeurt tellen
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id: sensor.living_room_roborock_q10_s5_total_cleaning_count
+    conditions:
+      - condition: template
+        value_template: >
+          {{ trigger.from_state is not none
+             and trigger.from_state.state | is_number
+             and trigger.to_state.state | is_number
+             and trigger.to_state.state | int > trigger.from_state.state | int }}
+      - condition: state
+        entity_id: switch.living_room_roborock_q10_s5_dust_collection
+        state: "on"
+    actions:
+      - action: counter.increment
+        target:
+          entity_id: counter.stofzak_leegbeurten
+
+  - id: stofzuiger_melding_stofzak
+    alias: Stofzuiger - herinnering stofzak
+    mode: single
+    variables:
+      max_leegbeurten: 30
+    triggers:
+      - trigger: numeric_state
+        entity_id: counter.stofzak_leegbeurten
+        above: 29
+      - trigger: time
+        at: "10:00:00"
+    conditions:
+      - condition: template
+        value_template: >
+          {{ states('counter.stofzak_leegbeurten') | int(0) >= max_leegbeurten
+             and (trigger.platform != 'time' or now().weekday() == 5) }}
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🗑️ Stofzak bijna vol"
+          message: >
+            De stofzak in het dock is {{ states('counter.stofzak_leegbeurten') }} keer
+            geleegd. Tijd om hem te controleren of te vervangen. Tik daarna op
+            "Stofzak vervangen" in het dashboard.
+          data:
+            url: /dashboard-stofzuiger/roborock
+
+  # --------------------------------------------------- filter / borstels / sensoren
+  - id: stofzuiger_melding_onderhoud
+    alias: Stofzuiger - herinnering onderhoud
+    mode: single
+    variables:
+      onderdelen:
+        - naam: Filter
+          entity: sensor.living_room_roborock_q10_s5_filter_time_used
+          max: 150
+          actie: bestellen
+        - naam: Hoofdborstel
+          entity: sensor.living_room_roborock_q10_s5_main_brush_time_used
+          max: 300
+          actie: bestellen
+        - naam: Zijborstel
+          entity: sensor.living_room_roborock_q10_s5_side_brush_time_used
+          max: 200
+          actie: bestellen
+        - naam: Sensoren
+          entity: sensor.living_room_roborock_q10_s5_sensor_time_used
+          max: 30
+          actie: schoonmaken
+      aan_de_beurt: >
+        {% set ns = namespace(lijst=[]) %}
+        {% for o in onderdelen if states(o.entity) | float(0) >= o.max %}
+          {% set ns.lijst = ns.lijst + [o.naam ~ ' ' ~ o.actie ~ ' (' ~ states(o.entity) | int ~ '/' ~ o.max ~ ' uur)'] %}
+        {% endfor %}
+        {{ ns.lijst }}
+    triggers:
+      # Direct zodra een onderdeel over de grens gaat...
+      - trigger: numeric_state
+        entity_id: sensor.living_room_roborock_q10_s5_filter_time_used
+        above: 149
+      - trigger: numeric_state
+        entity_id: sensor.living_room_roborock_q10_s5_main_brush_time_used
+        above: 299
+      - trigger: numeric_state
+        entity_id: sensor.living_room_roborock_q10_s5_side_brush_time_used
+        above: 199
+      - trigger: numeric_state
+        entity_id: sensor.living_room_roborock_q10_s5_sensor_time_used
+        above: 29
+      # ...en daarna elke zaterdag om 10:00 zolang het nog niet is gedaan.
+      - trigger: time
+        at: "10:00:00"
+    conditions:
+      - condition: template
+        value_template: >
+          {{ aan_de_beurt | count > 0
+             and (trigger.platform != 'time' or now().weekday() == 5) }}
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🧽 Onderhoud Roborock"
+          message: >
+            {{ aan_de_beurt | join('\n') }}.
+            Zet na het vervangen de teller op nul in de Roborock-app.
+          data:
+            url: /dashboard-stofzuiger/roborock

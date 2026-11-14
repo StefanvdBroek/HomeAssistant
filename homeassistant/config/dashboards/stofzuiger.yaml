@@ -149,7 +149,7 @@ views:
             name: Stofbak nu legen
 
       - type: entities
-        title: Onderhoud (gebruikte uren)
+        title: Onderhoud (gebruikte uren — melding bij filter 150, hoofdborstel 300, zijborstel 200, sensoren 30)
         entities:
           - entity: sensor.living_room_roborock_q10_s5_main_brush_time_used
             name: Hoofdborstel
@@ -159,6 +159,20 @@ views:
             name: Filter
           - entity: sensor.living_room_roborock_q10_s5_sensor_time_used
             name: Sensoren
+          - type: divider
+          - entity: counter.stofzak_leegbeurten
+            name: Leegbeurten sinds nieuwe stofzak (melding bij 30)
+          - type: button
+            name: Stofzak vervangen
+            icon: mdi:delete-restore
+            action_name: Op nul zetten
+            tap_action:
+              action: perform-action
+              perform_action: counter.reset
+              target:
+                entity_id: counter.stofzak_leegbeurten
+              confirmation:
+                text: Stofzak vervangen? De teller gaat terug naar 0.
 
       - type: entities
         title: Totalen
