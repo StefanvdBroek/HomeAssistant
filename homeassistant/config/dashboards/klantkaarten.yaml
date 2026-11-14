@@ -20,6 +20,10 @@ views:
                 entity: sensor.klantkaarten
                 show_icon: false
                 show_state: true
+          # Camera van de telefoon direct openen (www/klantkaart-camera-card.js).
+          - type: custom:klantkaart-camera-card
+            grid_options:
+              columns: full
           - type: button
             name: Kaart toevoegen
             icon: mdi:card-plus
@@ -28,17 +32,7 @@ views:
               action: navigate
               navigation_path: /todo?entity_id=todo.klantkaarten
             grid_options:
-              columns: 4
-              rows: 1
-          - type: button
-            name: Foto maken
-            icon: mdi:camera
-            show_state: false
-            tap_action:
-              action: navigate
-              navigation_path: /media-browser/browser/app%2Cmedia-source%3A%2F%2Fmedia_source/%2Cmedia-source%3A%2F%2Fmedia_source%2Flocal%2Fklantkaarten
-            grid_options:
-              columns: 4
+              columns: 6
               rows: 1
           - type: button
             name: Vernieuwen
@@ -48,7 +42,7 @@ views:
               action: perform-action
               perform_action: script.klantkaarten_bijwerken
             grid_options:
-              columns: 4
+              columns: 6
               rows: 1
 
       - type: grid
@@ -76,8 +70,6 @@ views:
               **Kaart toevoegen:** tik op *Kaart toevoegen*, zet de **winkel** als titel en het
               **kaartnummer** in de beschrijving. Voor een QR-code: begin de beschrijving met `qr:`.
 
-              **Foto maken:** tik op *Foto maken*, dan op **Uploaden** en kies **Foto maken**
-              (of een foto/screenshot uit je bibliotheek). De foto verschijnt als *Nieuwe foto*;
-              geef hem een naam door in de lijst een kaart toe te voegen met de winkel als titel
-              en als beschrijving `foto: <bestandsnaam>` (die staat bij de foto).
+              **Foto maken:** vul bovenaan de naam van de winkel in en tik op **📷 Foto maken**.
+              De camera gaat open; de foto wordt meteen een kaart.
               {% endfor %}

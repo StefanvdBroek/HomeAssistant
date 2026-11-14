@@ -80,6 +80,14 @@ huidige IP-adres van de Mac, en Home Assistant op poort 80 van dat adres houdt. 
 `.local`-namen werken op macOS, iOS, Windows 10+ en Linux (met Avahi). Android ondersteunt ze niet overal; gebruik
 daar het IP-adres.
 
+## Klantkaarten
+
+Dashboard *Klantkaarten*: kaarten toevoegen met een nummer (takenlijst *Klantkaarten*) of met een foto
+(knop **📷 Foto maken**, opent de camera van de telefoon). De foto's gaan via de eigen integratie
+`custom_components/klantkaarten` naar `homeassistant/config/media/klantkaarten/` (ook voor gebruikers zonder
+beheerdersrechten). De kaart `www/klantkaart-camera-card.js` moet één keer als dashboard-bron zijn
+geregistreerd: Instellingen → Dashboards → ⋮ → Bronnen → `/local/klantkaart-camera-card.js` (JavaScript-module).
+
 ## Updates
 
 De Docker-images staan vast op een versienummer in `docker-compose.yml`. **Dependabot** controleert elke zaterdag of er

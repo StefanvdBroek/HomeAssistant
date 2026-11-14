@@ -11,6 +11,9 @@ homeassistant:
 
 default_config:
 
+# Foto's van klantkaarten opslaan vanaf de telefoon (custom_components/klantkaarten).
+klantkaarten:
+
 # Thema's uit de Marketplace (homeassistant/config/themes/, niet in git).
 # Kiezen per gebruiker/apparaat via je profiel > Thema.
 frontend:
