@@ -1,6 +1,8 @@
-// Kaart "Klantkaart fotograferen" voor het dashboard Klantkaarten.
-// Naam van de winkel invullen, op de knop tikken: de camera van de telefoon gaat direct open
-// en de foto wordt opgeslagen via /api/klantkaarten/upload (custom_components/klantkaarten).
+// Kaart "Klantkaart toevoegen" voor het dashboard Klantkaarten.
+// Winkel invullen en dan:
+//  - kaartnummer invullen + "Opslaan": wordt een barcode (komt in de lijst todo.klantkaarten), of
+//  - "Foto maken": de camera van de telefoon gaat direct open en de foto wordt opgeslagen via
+//    /api/klantkaarten/upload (custom_components/klantkaarten).
 //
 // Gebruik:  type: custom:klantkaart-camera-card
 
@@ -18,6 +20,10 @@ class KlantkaartCameraCard extends HTMLElement {
           border-radius: 10px; border: 1px solid var(--divider-color, #ccc);
           background: var(--card-background-color, #fff); color: var(--primary-text-color, #000);
         }
+        .veld { margin-top: 10px; }
+        .knoppen { display: flex; gap: 10px; }
+        .knoppen button { flex: 1; }
+        button.tweede { background: var(--secondary-background-color, #eee); color: var(--primary-text-color, #000); }
         button {
           margin-top: 12px; width: 100%; font: inherit; font-size: 16px; font-weight: 500; padding: 14px;
           border: none; border-radius: 10px; cursor: pointer;
@@ -29,13 +35,22 @@ class KlantkaartCameraCard extends HTMLElement {
         .status.ok { color: var(--success-color, #43a047); }
       </style>
       <ha-card>
-        <div class="titel"><ha-icon icon="mdi:camera"></ha-icon><span>Klantkaart fotograferen</span></div>
-        <input type="text" id="naam" placeholder="Naam van de winkel, bijv. IKEA Family" autocomplete="off" enterkeyhint="done">
-        <button id="knop">📷 Foto maken</button>
+        <div class="titel"><ha-icon icon="mdi:card-plus"></ha-icon><span>Klantkaart toevoegen</span></div>
+        <input type="text" id="naam" placeholder="Winkel, bijv. Albert Heijn" autocomplete="off" enterkeyhint="next">
+        <input type="text" id="nummer" class="veld" placeholder="Kaartnummer (of laat leeg en maak een foto)"
+               autocomplete="off" inputmode="text" enterkeyhint="done">
+        <div class="knoppen">
+          <button id="opslaan">💾 Opslaan</button>
+          <button id="knop" class="tweede">📷 Foto maken</button>
+        </div>
         <input type="file" id="foto" accept="image/*" capture="environment" hidden>
         <div class="status" id="status"></div>
       </ha-card>`;
     this._naam = root.getElementById("naam");
+    this._nummer = root.getElementById("nummer");
+    this._opslaan = root.getElementById("opslaan");
+    this._opslaan.addEventListener("click", () => this._bewaarNummer());
+    this._nummer.addEventListener("keydown", (e) => { if (e.key === "Enter") this._bewaarNummer(); });
     this._knop = root.getElementById("knop");
     this._foto = root.getElementById("foto");
     this._status = root.getElementById("status");
@@ -48,6 +63,26 @@ class KlantkaartCameraCard extends HTMLElement {
   _melding(tekst, soort = "") {
     this._status.textContent = tekst;
     this._status.className = "status " + soort;
+  }
+
+  async _bewaarNummer() {
+    const naam = this._naam.value.trim();
+    const nummer = this._nummer.value.trim();
+    if (!naam) { this._melding("Vul eerst de naam van de winkel in.", "fout"); this._naam.focus(); return; }
+    if (!nummer) { this._melding("Vul het kaartnummer in, of tik op Foto maken.", "fout"); this._nummer.focus(); return; }
+    this._opslaan.disabled = true;
+    this._melding("Bezig met opslaan…");
+    try {
+      await this._hass.callService("todo", "add_item", { item: naam, description: nummer },
+                                   { entity_id: "todo.klantkaarten" });
+      await this._hass.callService("script", "klantkaarten_bijwerken", {});
+      this._melding(`✓ ${naam} opgeslagen. De kaart verschijnt zo hieronder.`, "ok");
+      this._naam.value = ""; this._nummer.value = "";
+    } catch (fout) {
+      this._melding(`Opslaan mislukt: ${fout.message || fout}`, "fout");
+    } finally {
+      this._opslaan.disabled = false;
+    }
   }
 
   _start() {
@@ -88,5 +123,5 @@ class KlantkaartCameraCard extends HTMLElement {
 
 customElements.define("klantkaart-camera-card", KlantkaartCameraCard);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "klantkaart-camera-card", name: "Klantkaart fotograferen",
-  description: "Maak met de camera een foto van een klantkaart." });
+window.customCards.push({ type: "klantkaart-camera-card", name: "Klantkaart toevoegen",
+  description: "Klantkaart toevoegen met een kaartnummer of een foto van de camera." });
