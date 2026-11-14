@@ -31,8 +31,8 @@ views:
               columns: 4
               rows: 1
           - type: button
-            name: Foto uploaden
-            icon: mdi:camera-plus
+            name: Foto maken
+            icon: mdi:camera
             show_state: false
             tap_action:
               action: navigate
@@ -76,6 +76,8 @@ views:
               **Kaart toevoegen:** tik op *Kaart toevoegen*, zet de **winkel** als titel en het
               **kaartnummer** in de beschrijving. Voor een QR-code: begin de beschrijving met `qr:`.
 
-              **Foto uploaden:** tik op *Foto uploaden* en upload een foto of screenshot van de
-              kaart. De bestandsnaam wordt de naam van de kaart.
+              **Foto maken:** tik op *Foto maken*, dan op **Uploaden** en kies **Foto maken**
+              (of een foto/screenshot uit je bibliotheek). De foto verschijnt als *Nieuwe foto*;
+              geef hem een naam door in de lijst een kaart toe te voegen met de winkel als titel
+              en als beschrijving `foto: <bestandsnaam>` (die staat bij de foto).
               {% endfor %}

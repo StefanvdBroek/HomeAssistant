@@ -68,6 +68,11 @@ scripts/mac/ha.sh up          # start Home Assistant (ook: down, restart, logs, 
 scripts/mac/install-mdns.sh   # eenmalig: maakt http://smarthome.local beschikbaar op het netwerk
 ```
 
+**Stofzuiger pauzeren bij een telefoongesprek:** `scripts/mac/install-telefoon.sh` start op de Mac een
+achtergrondscript dat ziet wanneer de iPhone gebeld wordt (via *Gesprekken van iPhone* in FaceTime) en dat aan Home
+Assistant meldt. Testen zonder te bellen: `scripts/mac/telefoon-monitor.sh --test gaat_over`. Verwijderen:
+`scripts/mac/install-telefoon.sh --uninstall`. Log: `~/Library/Logs/smarthome-telefoon.log`.
+
 `install-mdns.sh` installeert een LaunchAgent die bij het inloggen `smarthome.local` via Bonjour aankondigt met het
 huidige IP-adres van de Mac, en Home Assistant op poort 80 van dat adres houdt. Verwijderen:
 `scripts/mac/install-mdns.sh --uninstall`. Log: `~/Library/Logs/smarthome-mdns.log`.

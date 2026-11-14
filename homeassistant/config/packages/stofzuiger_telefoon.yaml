@@ -1,0 +1,163 @@
+# Stofzuiger pauzeren als de iPhone gebeld wordt en ik thuis ben.
+#
+# De iPhone zegt zelf niet dat hij gebeld wordt. De Mac wel (Gesprekken van iPhone):
+# scripts/mac/telefoon-monitor.sh leest dat uit het logboek van macOS en roept deze webhook aan
+# met {"gebeurtenis": "gaat_over" | "elders_opgenomen" | "beeindigd"}.
+#
+# Niet opgenomen of geweigerd -> stofzuiger gaat vanzelf verder.
+# Opgenomen op de iPhone -> de Mac ziet het einde van het gesprek niet; daarom een melding met
+# de knop "Verder stofzuigen", en na 10 minuten gaat hij vanzelf verder.
+
+input_boolean:
+  stofzuiger_pauze_bij_gesprek:
+    name: Pauzeren als ik gebeld word
+    icon: mdi:phone-ring
+  stofzuiger_gepauzeerd_door_gesprek:
+    name: Stofzuiger gepauzeerd door gesprek
+    icon: mdi:phone-in-talk
+  stofzuiger_gesprek_opgenomen:
+    name: Gesprek opgenomen op de iPhone
+    icon: mdi:phone-check
+
+script:
+  stofzuiger_verder_na_gesprek:
+    alias: Stofzuiger verder na gesprek
+    icon: mdi:play
+    mode: single
+    sequence:
+      - if:
+          - condition: state
+            entity_id: input_boolean.stofzuiger_gepauzeerd_door_gesprek
+            state: "on"
+          - condition: state
+            entity_id: vacuum.living_room_roborock_q10_s5
+            state: paused
+        then:
+          - action: vacuum.start
+            target:
+              entity_id: vacuum.living_room_roborock_q10_s5
+      - action: input_boolean.turn_off
+        target:
+          entity_id:
+            - input_boolean.stofzuiger_gepauzeerd_door_gesprek
+            - input_boolean.stofzuiger_gesprek_opgenomen
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          message: clear_notification
+          data:
+            tag: stofzuiger_gesprek
+
+automation:
+  # ------------------------------------------------------------- van de Mac
+  - id: stofzuiger_telefoon_webhook
+    alias: Stofzuiger - pauzeren bij telefoongesprek
+    mode: queued
+    max: 5
+    triggers:
+      - trigger: webhook
+        webhook_id: !secret telefoon_webhook_id
+        allowed_methods:
+          - POST
+        # Op de Mac komt het verzoek via de Docker-netwerklaag binnen en lijkt het "extern".
+        # De webhook-ID is lang en geheim, en Home Assistant is alleen via het eigen netwerk
+        # en Tailscale bereikbaar.
+        local_only: false
+    variables:
+      gebeurtenis: "{{ trigger.json.gebeurtenis | default('') }}"
+    actions:
+      - choose:
+          # Telefoon gaat over: pauzeren als hij aan het zuigen is en ik thuis ben
+          # (buiten de deur stoort het geluid niet, dan mag hij gewoon doorgaan).
+          - conditions:
+              - "{{ gebeurtenis == 'gaat_over' }}"
+              - condition: state
+                entity_id: input_boolean.stofzuiger_pauze_bij_gesprek
+                state: "on"
+              - condition: state
+                entity_id: person.stefan
+                state: home
+              - condition: state
+                entity_id: vacuum.living_room_roborock_q10_s5
+                state: cleaning
+            sequence:
+              - action: vacuum.pause
+                target:
+                  entity_id: vacuum.living_room_roborock_q10_s5
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.stofzuiger_gepauzeerd_door_gesprek
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.stofzuiger_gesprek_opgenomen
+
+          # Opgenomen op de iPhone: einde is niet te zien, dus een knop om verder te gaan.
+          - conditions:
+              - "{{ gebeurtenis == 'elders_opgenomen' }}"
+              - condition: state
+                entity_id: input_boolean.stofzuiger_gepauzeerd_door_gesprek
+                state: "on"
+            sequence:
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.stofzuiger_gesprek_opgenomen
+              - action: notify.mobile_app_iphone_van_stefan
+                data:
+                  title: "🤫 Stofzuiger gepauzeerd"
+                  message: "De stofzuiger wacht tot je klaar bent met bellen. Na 10 minuten gaat hij vanzelf verder."
+                  data:
+                    tag: stofzuiger_gesprek
+                    actions:
+                      - action: STOFZUIGER_VERDER
+                        title: Verder stofzuigen
+
+          # Gesprek voorbij zonder dat het op de iPhone is opgenomen (gemist, geweigerd,
+          # of op de Mac gevoerd): meteen verder.
+          - conditions:
+              - "{{ gebeurtenis == 'beeindigd' }}"
+              - condition: state
+                entity_id: input_boolean.stofzuiger_gepauzeerd_door_gesprek
+                state: "on"
+              - condition: state
+                entity_id: input_boolean.stofzuiger_gesprek_opgenomen
+                state: "off"
+            sequence:
+              - delay: "00:00:05"
+              - action: script.stofzuiger_verder_na_gesprek
+
+  # --------------------------------------------------------- knop of vangnet
+  - id: stofzuiger_telefoon_verder
+    alias: Stofzuiger - verder na telefoongesprek
+    mode: single
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: STOFZUIGER_VERDER
+      - trigger: state
+        entity_id: input_boolean.stofzuiger_gepauzeerd_door_gesprek
+        to: "on"
+        for: "00:10:00"
+    actions:
+      - action: script.stofzuiger_verder_na_gesprek
+
+  # Iemand heeft de stofzuiger intussen zelf bediend: niet meer automatisch verder.
+  - id: stofzuiger_telefoon_reset
+    alias: Stofzuiger - gesprekspauze vergeten bij handmatige bediening
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: vacuum.living_room_roborock_q10_s5
+        to:
+          - cleaning
+          - returning
+          - docked
+    conditions:
+      - condition: state
+        entity_id: input_boolean.stofzuiger_gepauzeerd_door_gesprek
+        state: "on"
+    actions:
+      - action: input_boolean.turn_off
+        target:
+          entity_id:
+            - input_boolean.stofzuiger_gepauzeerd_door_gesprek
+            - input_boolean.stofzuiger_gesprek_opgenomen

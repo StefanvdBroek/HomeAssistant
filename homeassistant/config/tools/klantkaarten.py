@@ -4,7 +4,9 @@ Bronnen (beide toe te voegen via de Home Assistant-app):
   1. De takenlijst "Klantkaarten": titel = winkel, beschrijving = kaartnummer.
      Een 13-cijferig EAN-nummer wordt een EAN-13-barcode, al het andere Code 128.
      Begint de beschrijving met "qr:" dan wordt het een QR-code van de rest.
-  2. Foto's in Media > My media > klantkaarten: bestandsnaam = winkel.
+     Beschrijving "foto: <bestandsnaam>" koppelt een geüploade foto aan deze winkel.
+  2. Foto's in Media > My media > klantkaarten: bestandsnaam = winkel. Foto's met een
+     automatische naam (image.jpg, IMG_1234.HEIC, ...) heten "Nieuwe foto" tot ze gekoppeld zijn.
 
 Gebruik (vanuit een automatisering): klantkaarten.py <base64 van de JSON-lijst met taken>
 Schrijft de afbeeldingen naar /config/www/klantkaarten/ (onder moeilijk te raden namen,
@@ -24,6 +26,8 @@ UIT = Path("/config/www/klantkaarten")
 DATA = Path("/config/klantkaarten")
 FOTOS = Path("/config/media/klantkaarten")
 FOTO_TYPES = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif"}
+# Namen die de camera of telefoon zelf geeft; die zeggen niets over de winkel.
+AUTOMATISCHE_NAAM = re.compile(r"^(image|img|photo|foto|pxl|dsc|screenshot|schermafbeelding)[\s_-]*[\d\s_.()-]*", re.I)
 
 # --------------------------------------------------------------------- Code 128
 # Breedtes (balk, ruimte, balk, ...) per waarde 0-106; elke code is 11 modules (stop 13).
@@ -155,12 +159,17 @@ def main():
     sleutel = geheim()
 
     kaarten, gebruikt = {}, set()
+    koppelingen = {}  # bestandsnaam (kleine letters) -> winkel
 
     for taak in taken:
         naam = (taak.get("summary") or "").strip()
+        beschrijving = (taak.get("description") or "").strip()
         if not naam:
             continue
         kaart = kaarten.setdefault(naam.lower(), {"naam": naam})
+        if beschrijving.lower().startswith("foto:"):
+            koppelingen[beschrijving[5:].strip().lower()] = naam
+            continue
         if not (taak.get("description") or "").strip():
             kaart["melding"] = "Nog geen kaartnummer: zet het in de beschrijving van de taak."
             continue
@@ -179,8 +188,17 @@ def main():
     for foto in sorted(FOTOS.iterdir()):
         if foto.suffix.lower() not in FOTO_TYPES or foto.name.startswith("."):
             continue
-        naam = foto.stem.strip()
+        gekoppeld = koppelingen.get(foto.name.lower()) or koppelingen.get(foto.stem.lower())
+        if gekoppeld:
+            naam = gekoppeld
+        elif AUTOMATISCHE_NAAM.fullmatch(foto.stem):
+            naam = f"Nieuwe foto ({foto.name})"
+        else:
+            naam = foto.stem.strip()
         kaart = kaarten.setdefault(naam.lower(), {"naam": naam})
+        if naam.startswith("Nieuwe foto"):
+            kaart["melding"] = (f"Geef deze foto een naam: voeg in de lijst een kaart toe met de winkel "
+                                f"als titel en als beschrijving: foto: {foto.name}")
         stat = foto.stat()
         bestand = bestandsnaam(sleutel, "foto", foto.name, str(stat.st_size), str(int(stat.st_mtime))) + ".jpg"
         doel = UIT / bestand
