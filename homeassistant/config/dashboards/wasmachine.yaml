@@ -1,0 +1,56 @@
+# Dashboard voor de LG-wasmachine.
+title: Wasmachine
+views:
+  - title: Wasmachine
+    path: wasmachine
+    icon: mdi:washing-machine
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: tile
+            entity: sensor.wasmachine_status
+            name: Status
+            icon: mdi:washing-machine
+          - type: glance
+            show_name: true
+            entities:
+              - entity: sensor.wasmachine_remaining_time
+                name: Klaar om
+                format: time
+              - entity: sensor.wasmachine_total_time
+                name: Programmaduur
+              - entity: sensor.wasmachine_cycles
+                name: Wasbeurten
+          - type: tile
+            entity: input_boolean.was_in_machine
+            name: Was zit nog in de machine
+            icon: mdi:tshirt-crew
+            color: amber
+          - type: button
+            name: Was is eruit
+            icon: mdi:check-circle
+            show_state: false
+            tap_action:
+              action: perform-action
+              perform_action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.was_in_machine
+
+      - type: entities
+        title: Stroomverbruik
+        entities:
+          - entity: sensor.wasmachine_energie_vandaag
+            name: Vandaag
+          - entity: sensor.wasmachine_energie_gisteren
+            name: Gisteren
+          - entity: sensor.wasmachine_energie_deze_maand
+            name: Deze maand
+          - entity: sensor.wasmachine_energie_vorige_maand
+            name: Vorige maand
+
+      - type: history-graph
+        title: Wasbeurten (laatste 7 dagen)
+        hours_to_show: 168
+        entities:
+          - entity: sensor.wasmachine_status
+            name: Status

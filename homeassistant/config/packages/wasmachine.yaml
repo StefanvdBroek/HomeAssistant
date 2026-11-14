@@ -1,4 +1,47 @@
-# Meldingen voor de LG-wasmachine (LG ThinQ) op de iPhone.
+# LG-wasmachine (LG ThinQ): meldingen, herinnering en sensoren voor het dashboard "Wasmachine".
+#
+# De machine kan niet doorgeven of de deur is opengegaan. Daarom houdt Home Assistant zelf bij
+# of de was er nog in zit: aan zodra hij klaar is, uit via de knop "Was is eruit" in de melding
+# of op het dashboard, of vanzelf zodra er een nieuwe wasbeurt start.
+
+input_boolean:
+  was_in_machine:
+    name: Was zit nog in de machine
+    icon: mdi:tshirt-crew
+
+template:
+  - sensor:
+      - name: Wasmachine status
+        unique_id: wasmachine_status_nl
+        icon: mdi:washing-machine
+        state: >
+          {{ {
+            'power_off': 'Uit', 'initial': 'Klaar om te starten', 'reserved': 'Uitgesteld gestart',
+            'detecting': 'Lading wegen', 'running': 'Wassen', 'rinsing': 'Spoelen',
+            'spinning': 'Centrifugeren', 'drying': 'Drogen', 'cool_down': 'Afkoelen',
+            'rinse_hold': 'Spoelstop', 'steam_softening': 'Stomen', 'refreshing': 'Opfrissen',
+            'pause': 'Gepauzeerd', 'end': 'Klaar', 'error': 'Fout', 'sleep': 'Slaapstand'
+          }.get(states('sensor.wasmachine_current_status'), states('sensor.wasmachine_current_status')) }}
+      - name: Wasmachine energie vandaag
+        unique_id: wasmachine_energie_vandaag_kwh
+        unit_of_measurement: kWh
+        device_class: energy
+        state: "{{ (states('sensor.wasmachine_energy_today') | float(0) / 1000) | round(2) }}"
+      - name: Wasmachine energie gisteren
+        unique_id: wasmachine_energie_gisteren_kwh
+        unit_of_measurement: kWh
+        device_class: energy
+        state: "{{ (states('sensor.wasmachine_energy_yesterday') | float(0) / 1000) | round(2) }}"
+      - name: Wasmachine energie deze maand
+        unique_id: wasmachine_energie_deze_maand_kwh
+        unit_of_measurement: kWh
+        device_class: energy
+        state: "{{ (states('sensor.wasmachine_energy_this_month') | float(0) / 1000) | round(2) }}"
+      - name: Wasmachine energie vorige maand
+        unique_id: wasmachine_energie_vorige_maand_kwh
+        unit_of_measurement: kWh
+        device_class: energy
+        state: "{{ (states('sensor.wasmachine_energy_last_month') | float(0) / 1000) | round(2) }}"
 
 automation:
   # ------------------------------------------------------------------ klaar
@@ -31,13 +74,59 @@ automation:
           {{ this.attributes.last_triggered is none
              or (now() - this.attributes.last_triggered).total_seconds() > 600 }}
     actions:
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.was_in_machine
       - action: notify.mobile_app_iphone_van_stefan
         data:
           title: "🧺 Wasmachine is klaar"
           message: "De was kan eruit. Hang hem op voordat hij gaat kreukelen of muf ruiken."
           data:
+            tag: wasmachine
             push:
               interruption-level: time-sensitive
+            actions:
+              - action: WAS_ERUIT
+                title: Was is eruit
+
+  # -------------------------------------------------------------- herinnering
+  - id: wasmachine_herinnering
+    alias: Wasmachine - herinnering na een uur
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.was_in_machine
+        to: "on"
+        for: "01:00:00"
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🧺 Zit de was er nog in?"
+          message: "De wasmachine is al een uur klaar. Vergeet de was niet op te hangen."
+          data:
+            tag: wasmachine
+            actions:
+              - action: WAS_ERUIT
+                title: Was is eruit
+
+  # --------------------------------------------------- was eruit / nieuwe was
+  - id: wasmachine_was_eruit
+    alias: Wasmachine - was is eruit
+    mode: single
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: WAS_ERUIT
+      - trigger: state
+        entity_id: sensor.wasmachine_current_status
+        to:
+          - detecting
+          - running
+    actions:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.was_in_machine
 
   # ------------------------------------------------------------------- fout
   - id: wasmachine_fout
