@@ -121,7 +121,7 @@ automation:
       - trigger: homeassistant
         event: start
       - trigger: time_pattern # vangnet als een herstart een keer mislukt
-        minutes: /5
+        minutes: /1
     conditions:
       - condition: state
         entity_id: input_boolean.deurbel_live_altijd
@@ -133,6 +133,13 @@ automation:
         value_template: >
           {{ is_state('input_boolean.deurbel_live_altijd', 'on')
              and not is_state('camera.deurbel', 'streaming') }}
+      # Eerst netjes stoppen: de brug denkt soms dat de oude stream nog loopt
+      # ("LivestreamAlreadyRunningError") en weigert dan een nieuwe start.
+      - action: camera.turn_off
+        target:
+          entity_id: camera.deurbel
+        continue_on_error: true
+      - delay: "00:00:03"
       - action: camera.turn_on
         target:
           entity_id: camera.deurbel
