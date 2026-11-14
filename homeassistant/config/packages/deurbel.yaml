@@ -29,7 +29,8 @@ automation:
           message: "Er staat iemand bij de voordeur ({{ now().strftime('%H:%M') }})."
           data:
             tag: deurbel
-            entity_id: camera.deurbel # lang indrukken: beeld van de deurbel
+            # Alleen een foto: de deurbel (accu) heeft geen doorlopende stream, en met
+            # entity_id: camera.* probeert de iPhone die te openen en toont dan niets.
             image: /api/camera_proxy/camera.deurbel
             url: /dashboard-overzicht/thuis
             push:
@@ -92,7 +93,8 @@ automation:
           message: "De deurbel ziet een persoon ({{ now().strftime('%H:%M') }})."
           data:
             tag: deurbel
-            entity_id: camera.deurbel
+            # Alleen een foto: de deurbel (accu) heeft geen doorlopende stream, en met
+            # entity_id: camera.* probeert de iPhone die te openen en toont dan niets.
             image: /api/camera_proxy/camera.deurbel
             url: /dashboard-overzicht/thuis
       - delay: "00:05:00" # hoogstens één melding per 5 minuten
