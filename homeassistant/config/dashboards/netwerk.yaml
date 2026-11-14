@@ -118,7 +118,7 @@ views:
                    | list %}
               {% set ns = namespace(rijen=[]) %}
               {% for a in apparaten | selectattr('state', 'eq', 'home') | sort(attribute='attributes.deco_device') %}
-              {% set ns.rijen = ns.rijen + ['| ' ~ (a.attributes.ui_device_name or a.name) ~ ' | '
+              {% set ns.rijen = ns.rijen + ['| ' ~ (a.name | regex_replace('^(Hallway|Office|Bedroom) Deco ', '')) ~ ' | '
                    ~ namen.get(a.attributes.deco_device, a.attributes.deco_device) ~ ' | '
                    ~ {'band2_4': '2,4 GHz', 'band5': '5 GHz', 'band6': '6 GHz'}.get(a.attributes.connection_type, a.attributes.connection_type or 'kabel')
                    ~ ' | ' ~ (a.attributes.down_kilobytes_per_s | round(1)) ~ ' kB/s | '
@@ -126,5 +126,5 @@ views:
               {% endfor %}
               {{ (['| Apparaat | Deco | Wifi | Binnen | Uit |', '|:--|:--|:--|--:|--:|'] + ns.rijen) | join('\n') }}
 
-              {% set weg = apparaten | selectattr('state', 'ne', 'home') | map(attribute='attributes.ui_device_name') | list %}
+              {% set weg = apparaten | selectattr('state', 'ne', 'home') | map(attribute='name') | map('regex_replace', '^(Hallway|Office|Bedroom) Deco ', '') | list %}
               {% if weg %}*Niet verbonden:* {{ weg | join(', ') }}{% endif %}
