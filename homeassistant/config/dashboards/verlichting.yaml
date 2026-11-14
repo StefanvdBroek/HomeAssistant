@@ -1,0 +1,30 @@
+# Verlichting: bediening en schema's per lamp.
+title: Verlichting
+views:
+  - title: Lampen
+    path: lampen
+    icon: mdi:lightbulb-group
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: tile
+            entity: light.lamp_voordeur
+            name: Lamp voordeur
+            features:
+              - type: light-brightness
+              - type: light-color-temp
+          - type: entities
+            title: Schema lamp voordeur
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.lamp_voordeur_schema_actief
+              - entity: input_boolean.lamp_voordeur_aan_bij_zonsondergang
+              - entity: input_number.lamp_voordeur_zonsondergang_offset
+              - entity: sensor.lamp_voordeur_aan_bij_zonsondergang
+                name: Gaat vandaag aan om
+                format: time
+              - entity: input_datetime.lamp_voordeur_aan_tijd
+              - entity: input_datetime.lamp_voordeur_uit_tijd
+              - type: divider
+              - entity: input_number.lamp_voordeur_helderheid
+              - entity: input_number.lamp_voordeur_kleurtemperatuur

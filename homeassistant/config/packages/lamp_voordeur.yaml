@@ -1,0 +1,109 @@
+# Schema voor de WiZ-lamp bij de voordeur (light.lamp_voordeur).
+# In te stellen via het dashboard "Verlichting": aan bij zonsondergang of op een vaste tijd,
+# uit op een vaste tijd, en de helderheid en kleurtemperatuur.
+
+input_boolean:
+  lamp_voordeur_schema_actief:
+    name: Schema actief
+    icon: mdi:calendar-clock
+  lamp_voordeur_aan_bij_zonsondergang:
+    name: Aan bij zonsondergang
+    icon: mdi:weather-sunset-down
+
+input_datetime:
+  lamp_voordeur_aan_tijd:
+    name: Aan om (als niet bij zonsondergang)
+    has_date: false
+    has_time: true
+    icon: mdi:lightbulb-on-outline
+  lamp_voordeur_uit_tijd:
+    name: Uit om
+    has_date: false
+    has_time: true
+    icon: mdi:lightbulb-off-outline
+
+input_number:
+  lamp_voordeur_zonsondergang_offset:
+    name: Minuten na zonsondergang
+    min: -60
+    max: 120
+    step: 5
+    unit_of_measurement: min
+    icon: mdi:timer-sand
+  lamp_voordeur_helderheid:
+    name: Helderheid
+    min: 5
+    max: 100
+    step: 5
+    unit_of_measurement: "%"
+    icon: mdi:brightness-6
+  lamp_voordeur_kleurtemperatuur:
+    name: Kleurtemperatuur
+    min: 2200
+    max: 6500
+    step: 100
+    unit_of_measurement: K
+    icon: mdi:thermometer
+
+template:
+  - trigger:
+      - trigger: homeassistant
+        event: start
+      - trigger: state
+        entity_id:
+          - sun.sun
+          - input_number.lamp_voordeur_zonsondergang_offset
+    sensor:
+      - name: Lamp voordeur aan bij zonsondergang
+        unique_id: lamp_voordeur_zonsondergang_tijd
+        device_class: timestamp
+        icon: mdi:weather-sunset-down
+        state: >
+          {% set ondergang = state_attr('sun.sun', 'next_setting') %}
+          {% if ondergang %}
+            {{ (as_datetime(ondergang)
+                + timedelta(minutes=states('input_number.lamp_voordeur_zonsondergang_offset') | int(0))
+               ).isoformat() }}
+          {% endif %}
+
+automation:
+  - id: lamp_voordeur_aan
+    alias: Lamp voordeur - aan volgens schema
+    mode: single
+    triggers:
+      - trigger: time
+        at: input_datetime.lamp_voordeur_aan_tijd
+        id: vaste_tijd
+      - trigger: time
+        at: sensor.lamp_voordeur_aan_bij_zonsondergang
+        id: zonsondergang
+    conditions:
+      - condition: state
+        entity_id: input_boolean.lamp_voordeur_schema_actief
+        state: "on"
+      - condition: template
+        value_template: >
+          {{ (trigger.id == 'zonsondergang')
+             == is_state('input_boolean.lamp_voordeur_aan_bij_zonsondergang', 'on') }}
+    actions:
+      - action: light.turn_on
+        target:
+          entity_id: light.lamp_voordeur
+        data:
+          brightness_pct: "{{ states('input_number.lamp_voordeur_helderheid') | int(70) }}"
+          color_temp_kelvin: "{{ states('input_number.lamp_voordeur_kleurtemperatuur') | int(2700) }}"
+
+  - id: lamp_voordeur_uit
+    alias: Lamp voordeur - uit volgens schema
+    mode: single
+    triggers:
+      - trigger: time
+        at: input_datetime.lamp_voordeur_uit_tijd
+    conditions:
+      - condition: state
+        entity_id: input_boolean.lamp_voordeur_schema_actief
+        state: "on"
+    actions:
+      - action: light.turn_off
+        target:
+          entity_id: light.lamp_voordeur

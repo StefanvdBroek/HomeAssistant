@@ -26,6 +26,12 @@ lovelace:
       icon: mdi:robot-vacuum
       show_in_sidebar: true
       filename: dashboards/stofzuiger.yaml
+    dashboard-verlichting:
+      mode: yaml
+      title: Verlichting
+      icon: mdi:lightbulb-group
+      show_in_sidebar: true
+      filename: dashboards/verlichting.yaml
 
 # Database opschonen: bewaar 30 dagen geschiedenis.
 recorder:
