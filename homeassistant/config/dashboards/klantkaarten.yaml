@@ -24,67 +24,7 @@ views:
           - type: custom:klantkaart-camera-card
             grid_options:
               columns: full
-          - type: button
-            name: Kaarten bewerken
-            icon: mdi:pencil
-            show_state: false
-            tap_action:
-              action: navigate
-              navigation_path: /todo?entity_id=todo.klantkaarten
-            grid_options:
-              columns: 6
-              rows: 1
-          # Offline-app (tools/klantkaarten.py): via Safari/Chrome op het beginscherm zetten.
-          - type: markdown
+          # Alle kaarten, inklapbaar, met potloodje en prullenbak (www/klantkaart-camera-card.js).
+          - type: custom:klantkaarten-lijst-card
             grid_options:
               columns: full
-            content: |
-              {% set app = state_attr('sensor.klantkaarten', 'app') %}
-              {% if app %}📲 **Ook zonder internet:** open in **Safari** (iPhone) of **Chrome** (Android):
-              `http://100.86.230.123:8123{{ app }}`
-              en kies **Deel → Zet op beginscherm** (Chrome: **⋮ → Toevoegen aan startscherm**).
-              Daarna werkt het icoon *Klantkaarten* ook offline en werkt het zichzelf bij als je online bent.
-              {% endif %}
-          - type: button
-            name: Vernieuwen
-            icon: mdi:refresh
-            show_state: false
-            tap_action:
-              action: perform-action
-              perform_action: script.klantkaarten_bijwerken
-            grid_options:
-              columns: 6
-              rows: 1
-
-      - type: grid
-        column_span: 2
-        cards:
-          - type: markdown
-            grid_options:
-              columns: full
-            # Letterlijke tekst (|): elke regel blijft een regel, anders breekt de markdown.
-            # Velden met .get(): de markdown-kaart rendert strikt en faalt op een ontbrekend veld.
-            content: |
-              {% set kaarten = state_attr('sensor.klantkaarten', 'kaarten') or [] %}
-              {% for k in kaarten %}
-              ## {{ k.naam }}
-
-              {% if k.get('barcode') %}![{{ k.naam }}]({{ k.barcode }})
-
-              {% endif %}
-              {% if k.get('foto') %}![{{ k.naam }}]({{ k.foto }})
-
-              {% endif %}
-              {% if k.get('melding') %}⚠️ *{{ k.melding }}*
-
-              {% endif %}
-              {% if k.get('soort') %}<font color="#888888">{{ k.soort }}</font>
-
-              {% endif %}
-              {% if not loop.last %}---{% endif %}
-
-              {% else %}
-              Nog geen klantkaarten. Tik rechtsonder op **+**, vul de **winkel** in en daarna het
-              **kaartnummer** (💾 Opslaan), of maak een **foto** van de kaart (📷 Foto maken): de
-              barcode of QR-code wordt dan uit de foto gelezen.
-              {% endfor %}

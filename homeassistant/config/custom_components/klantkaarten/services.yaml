@@ -3,3 +3,32 @@ fotos_omzetten:
   description: >
     Leest de barcode of QR-code uit alle foto's in Media > klantkaarten en maakt er kaarten met
     een scherpe barcode van. Foto's waarop niets te lezen is, blijven staan.
+
+wijzigen:
+  name: Klantkaart wijzigen
+  description: Naam en/of kaartnummer van een klantkaart aanpassen.
+  fields:
+    naam:
+      name: Huidige naam
+      required: true
+      selector:
+        text:
+    nieuwe_naam:
+      name: Nieuwe naam
+      selector:
+        text:
+    nummer:
+      name: Kaartnummer
+      description: Leeg laten om het nummer (of de foto) te houden.
+      selector:
+        text:
+
+verwijderen:
+  name: Klantkaart verwijderen
+  description: Haalt de klantkaart weg, inclusief een eventuele foto.
+  fields:
+    naam:
+      name: Naam
+      required: true
+      selector:
+        text:

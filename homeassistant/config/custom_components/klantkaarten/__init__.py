@@ -150,6 +150,57 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     hass.services.async_register(DOMAIN, "fotos_omzetten", fotos_omzetten,
                                  supports_response=SupportsResponse.OPTIONAL)
+
+    async def items_met_naam(naam: str) -> list[dict]:
+        antwoord = await hass.services.async_call(
+            "todo", "get_items", {"status": ["needs_action", "completed"]},
+            target={"entity_id": LIJST}, blocking=True, return_response=True)
+        return [i for i in antwoord[LIJST]["items"] if i["summary"].strip().lower() == naam.lower()]
+
+    def fotos_van(naam: str) -> list[Path]:
+        return [f for f in map_.glob(f"{glob_escape(naam)}.*") if f.suffix.lower() in FOTO_TYPES]
+
+    async def wijzigen(call: ServiceCall) -> None:
+        """Naam en/of nummer van een kaart aanpassen (ook een kaart die nog een foto is)."""
+        naam = call.data["naam"].strip()
+        nieuw = veilige_naam(call.data.get("nieuwe_naam") or naam) or naam
+        nummer = (call.data.get("nummer") or "").strip()
+        items = await items_met_naam(naam)
+        if nummer:
+            if items:
+                await hass.services.async_call(
+                    "todo", "update_item",
+                    {"item": items[0]["uid"], "rename": nieuw, "description": nummer},
+                    target={"entity_id": LIJST}, blocking=True)
+            else:
+                await kaart_opslaan(hass, nieuw, nummer)
+            # Er is nu een nummer: een eventuele foto van deze kaart is niet meer nodig.
+            await hass.async_add_executor_job(
+                lambda: [f.unlink() for f in fotos_van(naam) + (fotos_van(nieuw) if nieuw != naam else [])])
+        else:
+            if items and nieuw != naam:
+                await hass.services.async_call(
+                    "todo", "update_item", {"item": items[0]["uid"], "rename": nieuw},
+                    target={"entity_id": LIJST}, blocking=True)
+            if nieuw != naam:  # foto meeverhuizen naar de nieuwe naam
+                await hass.async_add_executor_job(
+                    lambda: [f.rename(f.with_name(nieuw + f.suffix)) for f in fotos_van(naam)])
+        _LOGGER.info("Klantkaart '%s' gewijzigd", naam)
+        bijwerken(hass)
+
+    async def verwijderen(call: ServiceCall) -> None:
+        """Kaart weghalen: uit de lijst en de eventuele foto."""
+        naam = call.data["naam"].strip()
+        for item in await items_met_naam(naam):
+            await hass.services.async_call(
+                "todo", "remove_item", {"item": item["uid"]},
+                target={"entity_id": LIJST}, blocking=True)
+        await hass.async_add_executor_job(lambda: [f.unlink() for f in fotos_van(naam)])
+        _LOGGER.info("Klantkaart '%s' verwijderd", naam)
+        bijwerken(hass)
+
+    hass.services.async_register(DOMAIN, "wijzigen", wijzigen)
+    hass.services.async_register(DOMAIN, "verwijderen", verwijderen)
     return True
 
 
