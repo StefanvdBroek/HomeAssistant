@@ -24,7 +24,7 @@ fi
 # 2. Mosquitto-wachtwoordbestand aanmaken
 mkdir -p mosquitto/data mosquitto/log
 if [[ ! -f mosquitto/config/passwd ]]; then
-  docker run --rm -v "$PWD/mosquitto/config:/mosquitto/config" eclipse-mosquitto:2 \
+  docker run --rm -v "$PWD/mosquitto/config:/mosquitto/config" "$(docker compose config --images mosquitto 2>/dev/null || echo eclipse-mosquitto:2)" \
     sh -c "touch /mosquitto/config/passwd \
       && mosquitto_passwd -b /mosquitto/config/passwd '$MQTT_USER' '$MQTT_PASSWORD' \
       && chmod 0700 /mosquitto/config/passwd \

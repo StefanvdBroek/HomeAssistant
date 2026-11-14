@@ -55,10 +55,23 @@ huidige IP-adres van de Mac, en Home Assistant op poort 80 van dat adres houdt. 
 `.local`-namen werken op macOS, iOS, Windows 10+ en Linux (met Avahi). Android ondersteunt ze niet overal; gebruik
 daar het IP-adres.
 
+## Updates
+
+De Docker-images staan vast op een versienummer in `docker-compose.yml`. **Dependabot** controleert elke zaterdag of er
+nieuwe versies zijn en opent dan een pull request op GitHub (Home Assistant apart, de overige images samen). Na het
+mergen van zo'n PR:
+
+```bash
+git pull && docker compose pull && docker compose up -d
+```
+
+Updates binnen Home Assistant (HACS, ESPHome-apparaten, Zigbee-firmware) geven een melding op de iPhone
+(`packages/updates.yaml`) en installeer je via **Instellingen → Updates**.
+
 ## Beheer
 
 ```bash
-docker compose pull && docker compose up -d   # updaten (lees eerst de release notes)
+docker compose pull && docker compose up -d   # images opnieuw ophalen en herstarten
 docker compose logs -f homeassistant          # logs bekijken
 docker compose restart homeassistant          # herstarten
 ```

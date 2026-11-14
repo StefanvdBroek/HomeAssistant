@@ -1,0 +1,24 @@
+# Wekelijkse controle op nieuwe versies van de Docker-images in docker-compose.yml.
+# Dependabot opent per update een pull request met de release notes.
+# Na het mergen op de mini-pc: git pull && docker compose pull && docker compose up -d
+version: 2
+updates:
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    commit-message:
+      prefix: "update"
+    labels:
+      - updates
+    groups:
+      # Mosquitto, Zigbee2MQTT en ESPHome samen in één PR; Home Assistant apart,
+      # omdat die vaker breaking changes heeft en je de release notes wilt lezen.
+      overige-images:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "ghcr.io/home-assistant/*"

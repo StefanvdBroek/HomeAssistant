@@ -1,0 +1,35 @@
+# Melding op de iPhone zodra er binnen Home Assistant een update beschikbaar komt:
+# HACS-integraties en -kaarten, ESPHome-apparaten, Zigbee-firmware (via Zigbee2MQTT), enz.
+#
+# Updates van de Docker-images zelf (Home Assistant, Mosquitto, Zigbee2MQTT, ESPHome)
+# komen als pull request van Dependabot op GitHub, zie .github/dependabot.yml.
+
+automation:
+  - id: melding_update_beschikbaar
+    alias: Melding - update beschikbaar
+    mode: queued
+    max: 20
+    triggers:
+      - trigger: event
+        event_type: state_changed
+    conditions:
+      - condition: template
+        value_template: >
+          {{ trigger.event.data.entity_id.startswith('update.')
+             and trigger.event.data.new_state is not none
+             and trigger.event.data.new_state.state == 'on'
+             and (trigger.event.data.old_state is none
+                  or trigger.event.data.old_state.state != 'on'
+                  or trigger.event.data.old_state.attributes.latest_version
+                     != trigger.event.data.new_state.attributes.latest_version) }}
+    actions:
+      - variables:
+          nieuw: "{{ trigger.event.data.new_state }}"
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "⬆️ Update beschikbaar"
+          message: >
+            {{ nieuw.attributes.title or nieuw.name }}:
+            {{ nieuw.attributes.installed_version }} → {{ nieuw.attributes.latest_version }}
+          data:
+            url: /config/updates
