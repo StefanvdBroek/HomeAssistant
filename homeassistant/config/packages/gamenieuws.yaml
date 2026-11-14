@@ -1,0 +1,14 @@
+# Internationaal gamenieuws (IGN, Eurogamer, GameSpot, PC Gamer) voor het dashboard "Overzicht".
+# tools/gamenieuws.py voegt de RSS-feeds samen; feeds aanpassen doe je daar.
+
+command_line:
+  - sensor:
+      name: Gamenieuws wereldwijd
+      unique_id: gamenieuws_wereldwijd
+      icon: mdi:earth
+      command: python3 /config/tools/gamenieuws.py
+      command_timeout: 60
+      scan_interval: 900 # elk kwartier
+      value_template: "{{ value_json.laatste }}"
+      json_attributes:
+        - berichten
