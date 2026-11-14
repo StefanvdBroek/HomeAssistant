@@ -58,7 +58,7 @@ Vraagt Eufy om een code of captcha, dan verschijnt die in Home Assistant als mel
 
 **Live beeld**: de profiel-`eufy` start ook **go2rtc**. De integratie stuurt de stream van de deurbel daarheen en Home
 Assistant leest hem terug. Zet bij Eufy Security → Configureren het *RTSP server address* op `127.0.0.1` (mini-pc) of
-`go2rtc` (Mac). Live beeld kost accu; het dashboard stopt het na 3 minuten vanzelf.
+`go2rtc` (Mac). Live beeld kost veel accu en blijft lopen tot de deurbel het zelf beëindigt.
 
 ## Testen op macOS
 
