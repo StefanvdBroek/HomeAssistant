@@ -1,0 +1,81 @@
+# Meldingen voor de LG-wasmachine (LG ThinQ) op de iPhone.
+
+automation:
+  # ------------------------------------------------------------------ klaar
+  # Primair via de gebeurtenis "washing_is_complete" van LG; als reserve via de status "end".
+  # De voorwaarde voorkomt een dubbele melding als beide binnen 10 minuten binnenkomen.
+  - id: wasmachine_klaar
+    alias: Wasmachine - melding als hij klaar is
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: event.wasmachine_notification
+        not_from:
+          - unavailable
+          - unknown
+        id: lg_melding
+      - trigger: state
+        entity_id: sensor.wasmachine_current_status
+        to: end
+        not_from:
+          - unavailable
+          - unknown
+        id: status
+    conditions:
+      - condition: template
+        value_template: >
+          {{ trigger.id != 'lg_melding'
+             or trigger.to_state.attributes.event_type == 'washing_is_complete' }}
+      - condition: template
+        value_template: >
+          {{ this.attributes.last_triggered is none
+             or (now() - this.attributes.last_triggered).total_seconds() > 600 }}
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🧺 Wasmachine is klaar"
+          message: "De was kan eruit. Hang hem op voordat hij gaat kreukelen of muf ruiken."
+          data:
+            push:
+              interruption-level: time-sensitive
+
+  # ------------------------------------------------------------------- fout
+  - id: wasmachine_fout
+    alias: Wasmachine - melding bij fout
+    mode: queued
+    variables:
+      uitleg:
+        unable_to_lock_error: "De deur kan niet op slot. Controleer of de deur goed dicht is."
+        water_supply_error: "Er komt geen water binnen. Staat de kraan open en is de slang niet geknikt?"
+        out_of_balance_error: "De trommel is uit balans. Verdeel de was en start opnieuw."
+        door_open_error: "De deur staat open."
+        water_drain_error: "Het water loopt niet weg. Controleer het pompfilter en de afvoerslang."
+        overfill_error: "Er zit te veel water in de machine."
+        water_level_sensor_error: "Storing in de waterniveausensor."
+        power_fail_error: "De stroom is uitgevallen tijdens het wassen."
+        locked_motor_error: "De motor zit vast."
+        temperature_sensor_error: "Storing in de temperatuursensor."
+        error_during_washing: "Er ging iets mis tijdens het wassen."
+    triggers:
+      - trigger: state
+        entity_id: event.wasmachine_error
+        not_from:
+          - unavailable
+          - unknown
+      - trigger: state
+        entity_id: event.wasmachine_notification
+        not_from:
+          - unavailable
+          - unknown
+    conditions:
+      - condition: template
+        value_template: >
+          {{ trigger.to_state.attributes.event_type in uitleg }}
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "⚠️ Probleem met de wasmachine"
+          message: "{{ uitleg[trigger.to_state.attributes.event_type] }}"
+          data:
+            push:
+              interruption-level: time-sensitive
