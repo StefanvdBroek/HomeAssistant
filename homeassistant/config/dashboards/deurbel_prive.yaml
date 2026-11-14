@@ -1,0 +1,216 @@
+# Privé-kopie van het dashboard "Deurbel": alleen zichtbaar voor Stefan.
+# (Dashboard alleen voor beheerders, en de weergave alleen voor deze gebruiker.)
+title: Deurbel (privé)
+views:
+  - title: Deurbel
+    path: deurbel
+    icon: mdi:doorbell-video
+    type: sections
+    visible:
+      - user: d50ef6680816427b8db92f5f48da876a # Stefan
+    max_columns: 3
+    badges:
+      - type: entity
+        entity: sensor.deurbel_battery_percentage
+        name: Accu
+        show_name: true
+      - type: entity
+        entity: select.homebase_guard_mode
+        name: Beveiliging
+        show_name: true
+      - type: entity
+        entity: binary_sensor.deurbel_snooze
+        name: Stil
+        show_name: true
+        visibility:
+          - condition: state
+            entity: binary_sensor.deurbel_snooze
+            state: "on"
+    sections:
+      # ------------------------------------------------------------ beeld
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Live beeld
+            icon: mdi:cctv
+          - type: picture-entity
+            entity: camera.deurbel
+            camera_view: live
+            fit_mode: contain
+            show_name: false
+            show_state: false
+            tap_action:
+              action: more-info
+            grid_options:
+              columns: full
+            visibility:
+              - condition: state
+                entity: camera.deurbel
+                state: streaming
+          - type: picture-entity
+            entity: camera.deurbel
+            camera_view: auto
+            fit_mode: contain
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            grid_options:
+              columns: full
+            visibility:
+              - condition: state
+                entity: camera.deurbel
+                state_not: streaming
+          - type: button
+            name: Live beeld starten
+            icon: mdi:video
+            show_state: false
+            tap_action:
+              action: perform-action
+              perform_action: camera.turn_on
+              target:
+                entity_id: camera.deurbel
+            grid_options:
+              columns: 6
+              rows: 1
+          - type: button
+            name: Live beeld stoppen
+            icon: mdi:video-off
+            show_state: false
+            tap_action:
+              action: perform-action
+              perform_action: camera.turn_off
+              target:
+                entity_id: camera.deurbel
+            grid_options:
+              columns: 6
+              rows: 1
+
+      # ------------------------------------------------------------ status
+      - type: grid
+        cards:
+          - type: heading
+            heading: Status
+            icon: mdi:information-outline
+          - type: entities
+            grid_options:
+              columns: full
+            entities:
+              - entity: binary_sensor.deurbel_ringing
+                name: Aanbellen
+              - entity: binary_sensor.deurbel_motion_detected
+                name: Beweging
+              - entity: binary_sensor.deurbel_person_detected
+                name: Persoon gezien
+              - entity: sensor.deurbel_person_name
+                name: Herkende persoon
+              - entity: sensor.deurbel_battery_percentage
+                name: Accu
+              - entity: camera.deurbel
+                name: Stream
+
+      # ------------------------------------------------------------ beveiliging
+      - type: grid
+        cards:
+          - type: heading
+            heading: Beveiliging
+            icon: mdi:shield-home
+          - type: tile
+            entity: select.homebase_guard_mode
+            name: Beveiligingsstand
+            features:
+              - type: select-options
+            grid_options:
+              columns: full
+          - type: tile
+            entity: alarm_control_panel.homebase
+            name: Alarm HomeBase
+            grid_options:
+              columns: full
+
+      # ------------------------------------------------- meldingen en automatisering
+      - type: grid
+        cards:
+          - type: heading
+            heading: Meldingen en automatisering
+            icon: mdi:bell-cog
+          - type: entities
+            grid_options:
+              columns: full
+            entities:
+              - entity: input_boolean.deurbel_live_altijd
+                name: Live beeld altijd aan
+              - entity: input_boolean.deurbel_melding_persoon
+                name: Melding bij persoon voor de deur
+              - entity: input_boolean.deurbel_lamp_bij_aanbellen
+                name: Lamp voordeur aan bij aanbellen ('s avonds)
+              - entity: automation.deurbel_melding_bij_aanbellen
+                name: Melding bij aanbellen
+          - type: button
+            name: 30 min stil
+            icon: mdi:bell-sleep
+            show_state: false
+            tap_action:
+              action: perform-action
+              perform_action: eufy_security.snooze
+              target:
+                entity_id: camera.deurbel
+              data:
+                snooze_time: 1800
+                snooze_chime: true
+                snooze_motion: true
+                snooze_homebase: true
+              confirmation:
+                text: Deurbel, gong en bewegingsmeldingen 30 minuten stil zetten?
+            grid_options:
+              columns: full
+              rows: 1
+
+      # ------------------------------------------------------------ camera
+      - type: grid
+        cards:
+          - type: heading
+            heading: Camera
+            icon: mdi:camera-outline
+          - type: entities
+            grid_options:
+              columns: full
+            entities:
+              - entity: switch.deurbel_camera_enabled
+                name: Camera aan
+              - entity: switch.deurbel_motion_detection
+                name: Bewegingsdetectie
+              - entity: select.deurbel_motion_detection_type
+                name: Detecteren
+              - entity: number.deurbel_motion_detection_sensitivity
+                name: Gevoeligheid (1-5)
+              - entity: switch.deurbel_auto_nightvision
+                name: Automatisch nachtzicht
+              - entity: switch.deurbel_audio_recording
+                name: Geluid opnemen
+              - entity: select.deurbel_video_streaming_quality
+                name: Beeldkwaliteit live
+              - entity: switch.deurbel_status_led
+                name: Statuslampje
+
+      # ------------------------------------------------------------ geluid
+      - type: grid
+        cards:
+          - type: heading
+            heading: Geluid
+            icon: mdi:volume-high
+          - type: entities
+            grid_options:
+              columns: full
+            entities:
+              - entity: switch.deurbel_indoor_chime_enabled
+                name: Gong binnen
+              - entity: number.deurbel_homebase_chime_ringtone_volume
+                name: Volume gong (HomeBase)
+              - entity: number.deurbel_speaker_volume
+                name: Volume luidspreker deurbel
+              - entity: number.homebase_alarm_volume
+                name: Volume alarm HomeBase
+              - entity: number.homebase_prompt_volume
+                name: Volume meldingen HomeBase
