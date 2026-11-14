@@ -3,6 +3,9 @@
 # Angelique (Android): de app geeft de telefoonstatus zelf door (sensor.sm_g781b_phone_state:
 # ringing / offhook / idle), dus pauzeren en weer verder gaan werkt volledig automatisch.
 #
+# Stefan (MacBook, Teams/Zoom/FaceTime): de Home Assistant-app voor macOS meldt of de microfoon
+# in gebruik is (binary_sensor.macbook_audio_input_in_use). Alleen als de Mac op de Deco in de hal zit.
+#
 # Stefan (iPhone):
 #
 # De iPhone zegt zelf niet dat hij gebeld wordt. De Mac wel (Gesprekken van iPhone):
@@ -127,8 +130,8 @@ automation:
               - condition: state
                 entity_id: input_boolean.stofzuiger_gesprek_opgenomen
                 state: "off"
-              - condition: template # niet als Angelique nog aan de telefoon is
-                value_template: "{{ states('sensor.sm_g781b_phone_state') not in ['ringing', 'offhook'] }}"
+              - condition: template # niet als Angelique of de Mac nog in gesprek is
+                value_template: "{{ states('sensor.sm_g781b_phone_state') not in ['ringing', 'offhook'] and not is_state('binary_sensor.macbook_audio_input_in_use', 'on') }}"
             sequence:
               - delay: "00:00:05"
               - action: script.stofzuiger_verder_na_gesprek
@@ -183,8 +186,67 @@ automation:
               - condition: state
                 entity_id: input_boolean.stofzuiger_gesprek_opgenomen
                 state: "off"
+              - condition: state # niet als de Mac nog in gesprek is
+                entity_id: binary_sensor.macbook_audio_input_in_use
+                state: "off"
             sequence:
               - delay: "00:00:05"
+              - action: script.stofzuiger_verder_na_gesprek
+
+  # ---------------------------------------------- Stefan op de Mac (Teams e.d.)
+  - id: stofzuiger_telefoon_mac
+    alias: Stofzuiger - pauzeren bij gesprek op de Mac (Teams)
+    mode: queued
+    max: 5
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.macbook_audio_input_in_use
+        from: "off"
+        to: "on"
+        id: gesprek
+      - trigger: state
+        entity_id: binary_sensor.macbook_audio_input_in_use
+        from: "on"
+        to: "off"
+        for: "00:00:10" # korte onderbrekingen (dempen, ander apparaat) negeren
+        id: klaar
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: gesprek
+              - condition: state
+                entity_id: input_boolean.stofzuiger_pauze_bij_gesprek
+                state: "on"
+              # Alleen als de Mac beneden is (verbonden met de Deco in de hal).
+              - condition: template
+                value_template: >
+                  {{ is_state('device_tracker.hallway_deco_macbook_pro_2', 'home')
+                     and state_attr('device_tracker.hallway_deco_macbook_pro_2', 'deco_device') == 'Hallway' }}
+              - condition: state
+                entity_id: vacuum.living_room_roborock_q10_s5
+                state: cleaning
+            sequence:
+              - action: vacuum.pause
+                target:
+                  entity_id: vacuum.living_room_roborock_q10_s5
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.stofzuiger_gepauzeerd_door_gesprek
+
+          # Gesprek op de Mac voorbij: verder, tenzij iemand anders nog belt.
+          - conditions:
+              - condition: trigger
+                id: klaar
+              - condition: state
+                entity_id: input_boolean.stofzuiger_gepauzeerd_door_gesprek
+                state: "on"
+              - condition: state
+                entity_id: input_boolean.stofzuiger_gesprek_opgenomen
+                state: "off"
+              - condition: template
+                value_template: "{{ states('sensor.sm_g781b_phone_state') not in ['ringing', 'offhook'] }}"
+            sequence:
               - action: script.stofzuiger_verder_na_gesprek
 
   # --------------------------------------------------------- knop of vangnet
@@ -206,7 +268,8 @@ automation:
       - condition: template
         value_template: >
           {{ trigger.id != 'vangnet'
-             or states('sensor.sm_g781b_phone_state') not in ['ringing', 'offhook'] }}
+             or (states('sensor.sm_g781b_phone_state') not in ['ringing', 'offhook']
+                 and not is_state('binary_sensor.macbook_audio_input_in_use', 'on')) }}
     actions:
       - action: script.stofzuiger_verder_na_gesprek
 
