@@ -115,7 +115,9 @@ def barcode_svg(modules, onderschrift, module=3, hoogte=140, stilte=12):
 def qr_svg(inhoud):
     import segno
     buf = io.BytesIO()
-    segno.make(inhoud, error="m").save(buf, kind="svg", scale=10, border=4, dark="#000", light="#fff")
+    # make_qr: altijd een gewone QR-code; segno.make kiest bij korte inhoud een Micro QR,
+    # en die kunnen veel kassascanners niet lezen.
+    segno.make_qr(inhoud, error="m").save(buf, kind="svg", scale=10, border=4, dark="#000", light="#fff")
     return buf.getvalue().decode()
 
 
@@ -178,7 +180,7 @@ def main():
         except Exception as fout:  # pylint: disable=broad-except
             kaart["melding"] = f"Kan geen barcode maken: {fout}"
             continue
-        bestand = bestandsnaam(sleutel, "code", naam, taak["description"]) + ".svg"
+        bestand = bestandsnaam(sleutel, "code-v2", naam, taak["description"]) + ".svg"
         doel = UIT / bestand
         if not doel.exists():
             doel.write_text(svg)

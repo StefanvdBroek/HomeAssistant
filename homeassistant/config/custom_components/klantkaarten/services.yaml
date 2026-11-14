@@ -1,0 +1,5 @@
+fotos_omzetten:
+  name: Foto's omzetten naar barcodes
+  description: >
+    Leest de barcode of QR-code uit alle foto's in Media > klantkaarten en maakt er kaarten met
+    een scherpe barcode van. Foto's waarop niets te lezen is, blijven staan.

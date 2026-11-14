@@ -1,8 +1,8 @@
 // Kaart "Klantkaart toevoegen" voor het dashboard Klantkaarten.
 // Winkel invullen en dan:
 //  - kaartnummer invullen + "Opslaan": wordt een barcode (komt in de lijst todo.klantkaarten), of
-//  - "Foto maken": de camera van de telefoon gaat direct open en de foto wordt opgeslagen via
-//    /api/klantkaarten/upload (custom_components/klantkaarten).
+//  - "Foto maken": de camera van de telefoon gaat direct open; de foto gaat naar
+//    /api/klantkaarten/upload (custom_components/klantkaarten), die de barcode/QR-code eruit leest.
 //
 // Gebruik:  type: custom:klantkaart-camera-card
 
@@ -108,7 +108,11 @@ class KlantkaartCameraCard extends HTMLElement {
       const antwoord = await this._hass.fetchWithAuth("/api/klantkaarten/upload", { method: "POST", body: data });
       const json = await antwoord.json().catch(() => ({}));
       if (!antwoord.ok) throw new Error(json.message || `fout ${antwoord.status}`);
-      this._melding(`✓ ${json.naam} opgeslagen. De kaart verschijnt zo hieronder.`, "ok");
+      if (json.gelezen) {
+        this._melding(`✓ ${json.soort === "QR-code" ? "QR-code" : "Barcode"} van ${json.naam} gelezen. De kaart verschijnt zo hieronder.`, "ok");
+      } else {
+        this._melding(`Geen barcode gevonden op de foto; de foto van ${json.naam} is bewaard. Tip: fotografeer de barcode recht en van dichtbij, of vul het nummer in.`, "fout");
+      }
       this._naam.value = "";
     } catch (fout) {
       this._melding(`Opslaan mislukt: ${fout.message}`, "fout");
