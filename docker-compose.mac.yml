@@ -22,3 +22,9 @@ services:
     network_mode: !reset null
     ports:
       - "3000:3000"
+
+  # Home Assistant bereikt go2rtc via de naam "go2rtc" (optie in de Eufy-integratie).
+  go2rtc:
+    network_mode: !reset null
+    ports:
+      - "1984:1984"

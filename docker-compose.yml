@@ -89,3 +89,14 @@ services:
       - TRUSTED_DEVICE_NAME=homeassistant
     network_mode: host # websocket op poort 3000; P2P naar de HomeBase/deurbel
     restart: unless-stopped
+
+  # Restreamer voor live beeld van de Eufy-deurbel: de integratie stuurt de P2P-stream
+  # naar go2rtc (API 1984) en Home Assistant leest hem terug via RTSP (8554).
+  go2rtc:
+    container_name: go2rtc
+    image: alexxit/go2rtc:1.9.15
+    profiles: ["eufy"]
+    environment:
+      - TZ=${TZ:-Europe/Amsterdam}
+    network_mode: host
+    restart: unless-stopped

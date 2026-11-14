@@ -64,13 +64,65 @@ views:
                 entity: sensor.deurbel_battery_percentage
                 show_state: true
                 show_icon: true
+          # Laatste foto, of live beeld zodra de stream loopt (knop hieronder).
           - type: picture-entity
             entity: camera.deurbel
             name: Deurbel
-            camera_view: auto # snapshot; tik voor live beeld (kost accu)
+            camera_view: auto
             show_state: false
+            tap_action:
+              action: none
             grid_options:
               columns: full
+            visibility:
+              - condition: state
+                entity: camera.deurbel
+                state_not: streaming
+          - type: picture-entity
+            entity: camera.deurbel
+            name: Deurbel (live)
+            camera_view: live
+            show_state: false
+            tap_action:
+              action: more-info
+            grid_options:
+              columns: full
+            visibility:
+              - condition: state
+                entity: camera.deurbel
+                state: streaming
+          - type: button
+            name: Live beeld
+            icon: mdi:video
+            show_state: false
+            tap_action:
+              action: perform-action
+              perform_action: camera.turn_on
+              target:
+                entity_id: camera.deurbel
+            grid_options:
+              columns: full
+              rows: 1
+            visibility:
+              - condition: state
+                entity: camera.deurbel
+                state_not: streaming
+          - type: button
+            name: Stop live beeld
+            icon: mdi:video-off
+            show_state: false
+            tap_action:
+              action: perform-action
+              perform_action: camera.turn_off
+              target:
+                entity_id: camera.deurbel
+            grid_options:
+              columns: full
+              rows: 1
+            visibility:
+              - condition: state
+                entity: camera.deurbel
+                state: streaming
           - type: tile
             entity: select.homebase_guard_mode
             name: Beveiliging

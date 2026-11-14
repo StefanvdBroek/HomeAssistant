@@ -99,6 +99,21 @@ automation:
             url: /dashboard-overzicht/thuis
       - delay: "00:05:00" # hoogstens één melding per 5 minuten
 
+  # ------------------------------------------------------------- live beeld
+  # Live beeld (via go2rtc) kost veel accu: na 3 minuten automatisch stoppen.
+  - id: deurbel_live_stop
+    alias: Deurbel - live beeld na 3 minuten stoppen
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: camera.deurbel
+        to: streaming
+        for: "00:03:00"
+    actions:
+      - action: camera.turn_off
+        target:
+          entity_id: camera.deurbel
+
   # ------------------------------------------------------------------- accu
   - id: deurbel_accu_laag
     alias: Deurbel - accu bijna leeg
