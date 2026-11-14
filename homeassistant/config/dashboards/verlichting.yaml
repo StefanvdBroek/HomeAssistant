@@ -13,6 +13,117 @@ views:
             features:
               - type: light-brightness
               - type: light-color-temp
+          - type: grid
+            title: Kleur
+            columns: 3
+            square: false
+            cards:
+              - type: button
+                name: Warm wit
+                icon: "mdi:white-balance-incandescent"
+                show_state: false
+                tap_action:
+                  action: perform-action
+                  perform_action: light.turn_on
+                  target:
+                    entity_id: light.lamp_voordeur
+                  data:
+                    color_temp_kelvin: 2700
+              - type: button
+                name: Daglicht
+                icon: "mdi:white-balance-sunny"
+                show_state: false
+                tap_action:
+                  action: perform-action
+                  perform_action: light.turn_on
+                  target:
+                    entity_id: light.lamp_voordeur
+                  data:
+                    color_temp_kelvin: 5000
+              - type: button
+                name: Rood
+                icon: "mdi:circle"
+                show_state: false
+                tap_action:
+                  action: perform-action
+                  perform_action: light.turn_on
+                  target:
+                    entity_id: light.lamp_voordeur
+                  data:
+                    rgb_color: [255, 0, 0]
+              - type: button
+                name: Oranje
+                icon: "mdi:circle"
+                show_state: false
+                tap_action:
+                  action: perform-action
+                  perform_action: light.turn_on
+                  target:
+                    entity_id: light.lamp_voordeur
+                  data:
+                    rgb_color: [255, 120, 0]
+              - type: button
+                name: Geel
+                icon: "mdi:circle"
+                show_state: false
+                tap_action:
+                  action: perform-action
+                  perform_action: light.turn_on
+                  target:
+                    entity_id: light.lamp_voordeur
+                  data:
+                    rgb_color: [255, 220, 0]
+              - type: button
+                name: Groen
+                icon: "mdi:circle"
+                show_state: false
+                tap_action:
+                  action: perform-action
+                  perform_action: light.turn_on
+                  target:
+                    entity_id: light.lamp_voordeur
+                  data:
+                    rgb_color: [0, 220, 60]
+              - type: button
+                name: Blauw
+                icon: "mdi:circle"
+                show_state: false
+                tap_action:
+                  action: perform-action
+                  perform_action: light.turn_on
+                  target:
+                    entity_id: light.lamp_voordeur
+                  data:
+                    rgb_color: [0, 80, 255]
+              - type: button
+                name: Paars
+                icon: "mdi:circle"
+                show_state: false
+                tap_action:
+                  action: perform-action
+                  perform_action: light.turn_on
+                  target:
+                    entity_id: light.lamp_voordeur
+                  data:
+                    rgb_color: [150, 0, 255]
+              - type: button
+                name: Roze
+                icon: "mdi:circle"
+                show_state: false
+                tap_action:
+                  action: perform-action
+                  perform_action: light.turn_on
+                  target:
+                    entity_id: light.lamp_voordeur
+                  data:
+                    rgb_color: [255, 60, 160]
+              - type: button
+                name: Kleurenwiel
+                icon: mdi:palette
+                show_state: false
+                tap_action:
+                  action: more-info
+                entity: light.lamp_voordeur
           - type: entities
             title: Schema lamp voordeur
             show_header_toggle: false
