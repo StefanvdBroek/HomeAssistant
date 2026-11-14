@@ -34,3 +34,6 @@ esphome/config/secrets.yaml
 
 # OS
 .DS_Store
+
+# Python
+__pycache__/
