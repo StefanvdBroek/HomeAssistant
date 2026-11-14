@@ -121,6 +121,11 @@ views:
           - type: tile
             entity: input_boolean.deurbel_lamp_bij_aanbellen
             name: Lamp bij aanbellen
+          - type: tile
+            entity: input_boolean.deurbel_live_altijd
+            name: Live beeld altijd aan
+            grid_options:
+              columns: full
           - type: weather-forecast
             entity: weather.home
             show_current: false
