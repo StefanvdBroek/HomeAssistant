@@ -71,7 +71,8 @@ views:
             camera_view: auto
             show_state: false
             tap_action:
-              action: none
+              action: navigate
+              navigation_path: /dashboard-overzicht/deurbel
             grid_options:
               columns: full
             visibility:
@@ -84,7 +85,8 @@ views:
             camera_view: live
             show_state: false
             tap_action:
-              action: more-info
+              action: navigate
+              navigation_path: /dashboard-overzicht/deurbel
             grid_options:
               columns: full
             visibility:
@@ -333,3 +335,21 @@ views:
               {% else %}
               Nog geen berichten opgehaald.
               {% endfor %}
+
+  # Grote weergave van de deurbel; geopend door op de camera in "Thuis" te tikken.
+  - title: Deurbel
+    path: deurbel
+    icon: mdi:doorbell-video
+    subview: true
+    back_path: /dashboard-overzicht/thuis
+    type: panel
+    cards:
+      - type: picture-entity
+        entity: camera.deurbel
+        camera_view: live
+        fit_mode: contain
+        show_name: false
+        show_state: false
+        tap_action:
+          action: navigate
+          navigation_path: /dashboard-overzicht/thuis
