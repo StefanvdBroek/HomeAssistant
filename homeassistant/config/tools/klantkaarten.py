@@ -154,6 +154,136 @@ def maak_foto(pad, doel):
         img.save(doel, "JPEG", quality=88)
 
 
+# ----------------------------------------------------------------- offline app
+# Een kleine webapp (PWA) met alle kaarten, die op het beginscherm van de telefoon gezet kan
+# worden en via een service worker ook zonder verbinding werkt. Staat onder een moeilijk te
+# raden map in /local/klantkaarten/, want /local is zonder inloggen bereikbaar.
+APP_HTML = """<!doctype html>
+<html lang="nl"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Klantkaarten">
+<meta name="theme-color" content="#1f6feb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icoon-180.png">
+<title>Klantkaarten</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f2f3f5; --kaart:#fff; --tekst:#111; --zacht:#666; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111; --kaart:#1c1c1e; --tekst:#eee; --zacht:#999; } }
+  body { margin:0; font-family:-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--tekst);
+         padding: env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom)); }
+  h1 { font-size:28px; margin:18px 4px 12px; }
+  .lijst { display:grid; gap:10px; }
+  button.kaart { all:unset; display:flex; justify-content:space-between; align-items:center; background:var(--kaart);
+         border-radius:14px; padding:16px 18px; font-size:18px; font-weight:600; cursor:pointer; }
+  button.kaart span { color:var(--zacht); font-size:14px; font-weight:400; }
+  .groot { position:fixed; inset:0; background:#fff; color:#000; display:none; flex-direction:column;
+         align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
+  .groot.open { display:flex; }
+  .groot h2 { margin:0 0 20px; font-size:24px; }
+  .groot img { width:100%; max-width:640px; max-height:60vh; object-fit:contain; }
+  .groot img.qr { max-width:320px; }
+  .groot p { color:#555; font-size:14px; margin-top:24px; }
+  .status { color:var(--zacht); font-size:13px; margin:18px 4px; }
+</style></head>
+<body>
+<h1>Klantkaarten</h1>
+<div class="lijst" id="lijst"></div>
+<div class="status" id="status"></div>
+<div class="groot" id="groot"><h2 id="g-naam"></h2><img id="g-beeld" alt=""><p>Tik om terug te gaan</p></div>
+<script>
+const KAARTEN = __KAARTEN__;
+const BIJGEWERKT = "__BIJGEWERKT__";
+const lijst = document.getElementById("lijst"), groot = document.getElementById("groot");
+for (const k of KAARTEN) {
+  const b = document.createElement("button"); b.className = "kaart";
+  b.innerHTML = `${k.naam.replace(/</g,"&lt;")}<span>${k.soort || "foto"}</span>`;
+  b.onclick = () => {
+    document.getElementById("g-naam").textContent = k.naam;
+    const img = document.getElementById("g-beeld"); img.src = k.beeld; img.className = k.soort === "QR-code" ? "qr" : "";
+    groot.classList.add("open");
+  };
+  lijst.appendChild(b);
+}
+if (!KAARTEN.length) lijst.textContent = "Nog geen klantkaarten.";
+groot.onclick = () => groot.classList.remove("open");
+document.getElementById("status").textContent =
+  "Bijgewerkt: " + new Date(BIJGEWERKT).toLocaleString("nl-NL", {dateStyle:"medium", timeStyle:"short"})
+  + (navigator.onLine ? "" : " · offline");
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body></html>
+"""
+
+APP_SW = """// Service worker: bewaart de app en alle kaartafbeeldingen op de telefoon.
+const VERSIE = "__VERSIE__";
+const BESTANDEN = __BESTANDEN__;
+self.addEventListener("install", (e) => {
+  e.waitUntil(caches.open(VERSIE).then((c) => c.addAll(BESTANDEN)).then(() => self.skipWaiting()));
+});
+self.addEventListener("activate", (e) => {
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== VERSIE).map((k) => caches.delete(k))))
+    .then(() => self.clients.claim()));
+});
+self.addEventListener("fetch", (e) => {
+  const url = new URL(e.request.url);
+  const pagina = e.request.mode === "navigate" || url.pathname.endsWith("/index.html");
+  if (pagina) {
+    // Eerst online kijken (nieuwe kaarten), anders de bewaarde versie.
+    e.respondWith(fetch(e.request).then((r) => {
+      const kopie = r.clone(); caches.open(VERSIE).then((c) => c.put(e.request, kopie)); return r;
+    }).catch(() => caches.match(e.request, {ignoreSearch: true}).then((r) => r || caches.match("index.html"))));
+  } else {
+    e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request)));
+  }
+});
+"""
+
+
+def maak_icoon(pad, grootte):
+    from PIL import Image, ImageDraw
+    img = Image.new("RGB", (grootte, grootte), "#1f6feb")
+    d = ImageDraw.Draw(img)
+    m = grootte // 6
+    d.rounded_rectangle((m, grootte // 4, grootte - m, grootte * 3 // 4), radius=grootte // 14, fill="#ffffff")
+    x, breedtes = m + grootte // 12, [1, 3, 1, 2, 1, 1, 3, 2, 1, 2, 1, 3]
+    for i, b in enumerate(breedtes):
+        w = b * grootte // 90
+        if i % 2 == 0:
+            d.rectangle((x, grootte // 3, x + w, grootte * 2 // 3), fill="#111111")
+        x += w + grootte // 90
+    img.save(pad, "PNG")
+
+
+def maak_app(sleutel, lijst, bijgewerkt):
+    """Schrijft de offline app naar /config/www/klantkaarten/<geheime map>/ en geeft het pad terug."""
+    map_ = UIT / ("app-" + bestandsnaam(sleutel, "app"))
+    map_.mkdir(exist_ok=True)
+    kaarten = [{"naam": k["naam"], "soort": k.get("soort"),
+                "beeld": "../" + (k.get("barcode") or k.get("foto")).rsplit("/", 1)[-1]}
+               for k in lijst if k.get("barcode") or k.get("foto")]
+    versie = hashlib.sha256(json.dumps(kaarten, sort_keys=True).encode()).hexdigest()[:12]
+    (map_ / "index.html").write_text(
+        APP_HTML.replace("__KAARTEN__", json.dumps(kaarten, ensure_ascii=False).replace("</", "<\\/"))
+                .replace("__BIJGEWERKT__", bijgewerkt))
+    # Geen "./": Home Assistant geeft voor een map 403, dus altijd index.html.
+    bestanden = ["index.html", "manifest.webmanifest", "icoon-180.png", "icoon-512.png"] + \
+                [k["beeld"] for k in kaarten]
+    (map_ / "sw.js").write_text(APP_SW.replace("__VERSIE__", "klantkaarten-" + versie)
+                                .replace("__BESTANDEN__", json.dumps(bestanden)))
+    (map_ / "manifest.webmanifest").write_text(json.dumps({
+        "name": "Klantkaarten", "short_name": "Klantkaarten", "start_url": "index.html", "scope": "./",
+        "display": "standalone", "background_color": "#f2f3f5", "theme_color": "#1f6feb",
+        "icons": [{"src": "icoon-180.png", "sizes": "180x180", "type": "image/png"},
+                  {"src": "icoon-512.png", "sizes": "512x512", "type": "image/png"}]}, ensure_ascii=False))
+    for grootte in (180, 512):
+        icoon = map_ / f"icoon-{grootte}.png"
+        if not icoon.exists():
+            maak_icoon(icoon, grootte)
+    return f"/local/klantkaarten/{map_.name}/index.html"
+
+
 def main():
     taken = json.loads(base64.b64decode(sys.argv[1])) if len(sys.argv) > 1 else []
     for map_ in (UIT, DATA, FOTOS):
@@ -218,8 +348,10 @@ def main():
             oud.unlink()
 
     lijst = sorted(kaarten.values(), key=lambda k: k["naam"].lower())
+    bijgewerkt = datetime.now(timezone.utc).isoformat()
+    app = maak_app(sleutel, lijst, bijgewerkt)
     (DATA / "index.json").write_text(json.dumps(
-        {"aantal": len(lijst), "bijgewerkt": datetime.now(timezone.utc).isoformat(), "kaarten": lijst},
+        {"aantal": len(lijst), "bijgewerkt": bijgewerkt, "app": app, "kaarten": lijst},
         ensure_ascii=False))
     print(f"{len(lijst)} klantkaarten")
 

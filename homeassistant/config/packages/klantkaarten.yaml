@@ -20,6 +20,7 @@ command_line:
       json_attributes:
         - kaarten
         - bijgewerkt
+        - app
 
 script:
   klantkaarten_bijwerken:

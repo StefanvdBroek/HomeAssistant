@@ -20,7 +20,7 @@ views:
                 entity: sensor.klantkaarten
                 show_icon: false
                 show_state: true
-          # Toevoegen met kaartnummer of camerafoto (www/klantkaart-camera-card.js).
+          # Ronde +-knop rechtsonder om een kaart toe te voegen (www/klantkaart-camera-card.js).
           - type: custom:klantkaart-camera-card
             grid_options:
               columns: full
@@ -34,6 +34,17 @@ views:
             grid_options:
               columns: 6
               rows: 1
+          # Offline-app (tools/klantkaarten.py): via Safari/Chrome op het beginscherm zetten.
+          - type: markdown
+            grid_options:
+              columns: full
+            content: |
+              {% set app = state_attr('sensor.klantkaarten', 'app') %}
+              {% if app %}📲 **Ook zonder internet:** open in **Safari** (iPhone) of **Chrome** (Android):
+              `http://100.86.230.123:8123{{ app }}`
+              en kies **Deel → Zet op beginscherm** (Chrome: **⋮ → Toevoegen aan startscherm**).
+              Daarna werkt het icoon *Klantkaarten* ook offline en werkt het zichzelf bij als je online bent.
+              {% endif %}
           - type: button
             name: Vernieuwen
             icon: mdi:refresh
@@ -73,7 +84,7 @@ views:
               {% if not loop.last %}---{% endif %}
 
               {% else %}
-              Nog geen klantkaarten. Vul hierboven de **winkel** in en daarna het **kaartnummer**
-              (💾 Opslaan) of maak een **foto** van de kaart (📷 Foto maken). Een QR-code: begin het
-              nummer met `qr:`.
+              Nog geen klantkaarten. Tik rechtsonder op **+**, vul de **winkel** in en daarna het
+              **kaartnummer** (💾 Opslaan), of maak een **foto** van de kaart (📷 Foto maken): de
+              barcode of QR-code wordt dan uit de foto gelezen.
               {% endfor %}
