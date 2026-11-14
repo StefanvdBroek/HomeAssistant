@@ -1,0 +1,112 @@
+# Eufy-deurbel (via eufy-security-ws en de integratie "Eufy Security").
+# Melding met beeld bij aanbellen, optioneel bij een persoon voor de deur,
+# de lamp voordeur 's avonds even aan, en een waarschuwing bij een lege accu.
+
+input_boolean:
+  deurbel_melding_persoon:
+    name: Melding bij persoon voor de deur
+    icon: mdi:account-alert
+  deurbel_lamp_bij_aanbellen:
+    name: Lamp voordeur aan bij aanbellen ('s avonds)
+    icon: mdi:lightbulb-on
+
+automation:
+  # ------------------------------------------------------------- aanbellen
+  - id: deurbel_aanbellen
+    alias: Deurbel - melding bij aanbellen
+    mode: single
+    max_exceeded: silent
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.deurbel_ringing
+        from: "off"
+        to: "on"
+    actions:
+      - delay: "00:00:02" # even wachten zodat de nieuwe snapshot er is
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🔔 Er wordt aangebeld"
+          message: "Er staat iemand bij de voordeur ({{ now().strftime('%H:%M') }})."
+          data:
+            tag: deurbel
+            entity_id: camera.deurbel # lang indrukken: beeld van de deurbel
+            image: /api/camera_proxy/camera.deurbel
+            url: /dashboard-overzicht/thuis
+            push:
+              interruption-level: time-sensitive
+      - delay: "00:00:30" # niet opnieuw melden als iemand meerdere keren drukt
+
+  # ------------------------------------------------- lamp aan bij aanbellen
+  - id: deurbel_lamp_voordeur
+    alias: Deurbel - lamp voordeur aan bij aanbellen in het donker
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.deurbel_ringing
+        from: "off"
+        to: "on"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.deurbel_lamp_bij_aanbellen
+        state: "on"
+      - condition: state
+        entity_id: sun.sun
+        state: below_horizon
+      - condition: state
+        entity_id: light.lamp_voordeur
+        state: "off"
+    actions:
+      - action: light.turn_on
+        target:
+          entity_id: light.lamp_voordeur
+        data:
+          brightness_pct: 100
+          color_temp_kelvin: 4000
+      - delay: "00:05:00"
+      - action: light.turn_off
+        target:
+          entity_id: light.lamp_voordeur
+
+  # ------------------------------------------------------ persoon voor de deur
+  - id: deurbel_persoon
+    alias: Deurbel - melding bij persoon voor de deur
+    mode: single
+    max_exceeded: silent
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.deurbel_person_detected
+        from: "off"
+        to: "on"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.deurbel_melding_persoon
+        state: "on"
+      - condition: state # aanbellen krijgt al een eigen melding
+        entity_id: binary_sensor.deurbel_ringing
+        state: "off"
+    actions:
+      - delay: "00:00:02"
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🚶 Iemand bij de voordeur"
+          message: "De deurbel ziet een persoon ({{ now().strftime('%H:%M') }})."
+          data:
+            tag: deurbel
+            entity_id: camera.deurbel
+            image: /api/camera_proxy/camera.deurbel
+            url: /dashboard-overzicht/thuis
+      - delay: "00:05:00" # hoogstens één melding per 5 minuten
+
+  # ------------------------------------------------------------------- accu
+  - id: deurbel_accu_laag
+    alias: Deurbel - accu bijna leeg
+    mode: single
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.deurbel_battery_percentage
+        below: 20
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🔋 Accu deurbel bijna leeg"
+          message: "De deurbel heeft nog {{ states('sensor.deurbel_battery_percentage') }}%. Tijd om hem op te laden."

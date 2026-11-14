@@ -55,6 +55,36 @@ views:
               De zon gaat
               {% if is_state('sun.sun', 'above_horizon') %}onder om **{{ as_timestamp(states('sensor.sun_next_setting')) | timestamp_custom('%H:%M') }}**
               {% else %}op om **{{ as_timestamp(states('sensor.sun_next_rising')) | timestamp_custom('%H:%M') }}**{% endif %}.
+          - type: heading
+            heading: Voordeur
+            heading_style: subtitle
+            icon: mdi:doorbell-video
+            badges:
+              - type: entity
+                entity: sensor.deurbel_battery_percentage
+                show_state: true
+                show_icon: true
+          - type: picture-entity
+            entity: camera.deurbel
+            name: Deurbel
+            camera_view: auto # snapshot; tik voor live beeld (kost accu)
+            show_state: false
+            grid_options:
+              columns: full
+          - type: tile
+            entity: select.homebase_guard_mode
+            name: Beveiliging
+            icon: mdi:shield-home
+          - type: tile
+            entity: binary_sensor.deurbel_person_detected
+            name: Persoon gezien
+            icon: mdi:account-eye
+          - type: tile
+            entity: input_boolean.deurbel_melding_persoon
+            name: Melding bij persoon
+          - type: tile
+            entity: input_boolean.deurbel_lamp_bij_aanbellen
+            name: Lamp bij aanbellen
           - type: weather-forecast
             entity: weather.home
             show_current: false
