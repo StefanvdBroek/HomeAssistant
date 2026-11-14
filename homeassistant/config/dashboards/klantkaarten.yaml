@@ -52,21 +52,22 @@ views:
             grid_options:
               columns: full
             # Letterlijke tekst (|): elke regel blijft een regel, anders breekt de markdown.
+            # Velden met .get(): de markdown-kaart rendert strikt en faalt op een ontbrekend veld.
             content: |
               {% set kaarten = state_attr('sensor.klantkaarten', 'kaarten') or [] %}
               {% for k in kaarten %}
               ## {{ k.naam }}
 
-              {% if k.barcode %}![{{ k.naam }}]({{ k.barcode }})
+              {% if k.get('barcode') %}![{{ k.naam }}]({{ k.barcode }})
 
               {% endif %}
-              {% if k.foto %}![{{ k.naam }}]({{ k.foto }})
+              {% if k.get('foto') %}![{{ k.naam }}]({{ k.foto }})
 
               {% endif %}
-              {% if k.melding %}⚠️ *{{ k.melding }}*
+              {% if k.get('melding') %}⚠️ *{{ k.melding }}*
 
               {% endif %}
-              {% if k.soort %}<font color="#888888">{{ k.soort }}</font>
+              {% if k.get('soort') %}<font color="#888888">{{ k.soort }}</font>
 
               {% endif %}
               {% if not loop.last %}---{% endif %}
