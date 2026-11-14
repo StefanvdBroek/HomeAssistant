@@ -16,3 +16,9 @@ services:
     ports:
       - "8123:8123"
       - "${MAC_LAN_IP:?start via scripts/mac/ha.sh}:80:8123" # http://smarthome.local
+
+  # Op de Mac geen host-netwerk: Home Assistant bereikt de brug via ws://eufy-security-ws:3000.
+  eufy-security-ws:
+    network_mode: !reset null
+    ports:
+      - "3000:3000"

@@ -8,6 +8,9 @@
 #
 # Met ESPHome:
 #   docker compose --profile esphome up -d
+#
+# Met de Eufy-deurbel/camera's (Eufy-account nodig, zie .env):
+#   docker compose --profile eufy up -d
 
 services:
   homeassistant:
@@ -68,4 +71,21 @@ services:
     environment:
       - TZ=${TZ:-Europe/Amsterdam}
     network_mode: host # dashboard op poort 6052
+    restart: unless-stopped
+
+  # Brug naar Eufy (deurbel, camera's, HomeBase) voor de integratie "Eufy Security".
+  # Logt in met een apart, gedeeld Eufy-account (zie .env); praat lokaal via P2P.
+  eufy-security-ws:
+    container_name: eufy-security-ws
+    image: bropat/eufy-security-ws:3.1.0
+    profiles: ["eufy"]
+    volumes:
+      - ./eufy/data:/data
+    environment:
+      - TZ=${TZ:-Europe/Amsterdam}
+      - USERNAME=${EUFY_USERNAME:-}
+      - PASSWORD=${EUFY_PASSWORD:-}
+      - COUNTRY=${EUFY_COUNTRY:-NL}
+      - TRUSTED_DEVICE_NAME=homeassistant
+    network_mode: host # websocket op poort 3000; P2P naar de HomeBase/deurbel
     restart: unless-stopped
