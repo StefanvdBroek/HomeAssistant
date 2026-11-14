@@ -127,6 +127,21 @@ views:
             entity: sensor.living_room_woonkamer_air_conditioning_humidity
             name: Luchtvochtigheid woonkamer
             icon: mdi:water-percent
+          - type: heading
+            heading: Stroom (airco's en wasmachine)
+            heading_style: subtitle
+            icon: mdi:lightning-bolt
+          - type: tile
+            entity: sensor.stroom_apparaten_vandaag
+            name: Vandaag
+          - type: tile
+            entity: sensor.stroom_apparaten_deze_maand
+            name: Deze maand
+          - type: tile
+            entity: sensor.stroom_apparaten_vorige_maand
+            name: Vorige maand
+            grid_options:
+              columns: full
 
       # ------------------------------------------------------------ huishouden
       - type: grid
@@ -188,24 +203,6 @@ views:
           - type: tile
             entity: input_boolean.stofzuig_programma_actief
             name: Stofzuigschema
-
-      # ------------------------------------------------------------ energie
-      - type: grid
-        cards:
-          - type: heading
-            heading: Stroom (airco's en wasmachine)
-            icon: mdi:lightning-bolt
-          - type: tile
-            entity: sensor.stroom_apparaten_vandaag
-            name: Vandaag
-          - type: tile
-            entity: sensor.stroom_apparaten_deze_maand
-            name: Deze maand
-          - type: tile
-            entity: sensor.stroom_apparaten_vorige_maand
-            name: Vorige maand
-            grid_options:
-              columns: full
 
       # ------------------------------------------------------------ gamenieuws
       - type: grid
