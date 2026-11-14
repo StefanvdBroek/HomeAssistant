@@ -1,0 +1,12 @@
+# Basisconfiguratie van Home Assistant.
+# De meeste integraties stel je in via de webinterface (Instellingen > Apparaten & diensten).
+
+default_config:
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+# Database opschonen: bewaar 30 dagen geschiedenis.
+recorder:
+  purge_keep_days: 30

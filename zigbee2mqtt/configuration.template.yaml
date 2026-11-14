@@ -1,0 +1,24 @@
+# Sjabloon voor zigbee2mqtt/data/configuration.yaml (wordt aangemaakt door scripts/setup.sh).
+# Zigbee2MQTT schrijft zelf naar dat bestand (o.a. de netwerksleutel), daarom staat het niet in git.
+# MQTT-inloggegevens, seriële poort en adapter komen uit docker-compose.yml / .env.
+version: 4
+
+homeassistant:
+  enabled: true
+
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://mosquitto:1883
+
+serial:
+  port: /dev/ttyACM0
+
+frontend:
+  enabled: true
+  port: 8080
+
+advanced:
+  network_key: GENERATE
+  pan_id: GENERATE
+  ext_pan_id: GENERATE
+  log_level: info

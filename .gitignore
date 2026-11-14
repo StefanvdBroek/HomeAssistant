@@ -1,0 +1,29 @@
+# Geheimen
+.env
+homeassistant/config/secrets.yaml
+mosquitto/config/passwd
+
+# Home Assistant runtime-data
+homeassistant/config/*
+!homeassistant/config/configuration.yaml
+!homeassistant/config/automations.yaml
+!homeassistant/config/scripts.yaml
+!homeassistant/config/scenes.yaml
+!homeassistant/config/secrets.yaml.example
+
+# Mosquitto runtime-data
+mosquitto/data/*
+mosquitto/log/*
+!mosquitto/data/.gitkeep
+!mosquitto/log/.gitkeep
+
+# Zigbee2MQTT runtime-data (bevat o.a. de netwerksleutel)
+zigbee2mqtt/data/*
+!zigbee2mqtt/data/.gitkeep
+
+# ESPHome build-bestanden en geheimen
+esphome/config/.esphome/
+esphome/config/secrets.yaml
+
+# OS
+.DS_Store
