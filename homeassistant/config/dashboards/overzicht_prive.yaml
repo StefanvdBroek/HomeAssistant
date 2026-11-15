@@ -160,21 +160,16 @@ views:
             entity: sensor.living_room_woonkamer_air_conditioning_humidity
             name: Luchtvochtigheid woonkamer
             icon: mdi:water-percent
-          - type: heading
-            heading: Airco zondagochtend
-            heading_style: subtitle
-            icon: mdi:calendar-sync
-          - type: entities
+          - type: button
+            name: Schema's en instellingen
+            icon: mdi:calendar-week
+            show_state: false
+            tap_action:
+              action: navigate
+              navigation_path: /dashboard-aircos/aircos
             grid_options:
               columns: full
-            show_header_toggle: false
-            entities:
-              - entity: input_boolean.airco_woonkamer_schema
-                name: Om de week aan
-              - entity: input_datetime.airco_woonkamer_volgende
-                name: Volgende keer
-              - entity: input_select.airco_woonkamer_stand
-              - entity: input_number.airco_woonkamer_temperatuur
+              rows: 1
           - type: heading
             heading: Stroom (airco's en wasmachine)
             heading_style: subtitle

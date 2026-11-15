@@ -1,13 +1,24 @@
-# Airco woonkamer (beneden) om de week op zondagochtend aan, en de status van de airco's actueel houden.
-# Alles in te stellen op het dashboard "Overzicht" (blok Klimaat):
-#   - schema aan/uit
-#   - volgende keer (datum + tijd): schuift na elke keer vanzelf 14 dagen op, zo kies je ook welke zondagen
-#   - stand en temperatuur
+# Schema's voor de airco's (woonkamer beneden en zolder). Alles op het dashboard "Airco's".
+#
+# Weekschema per airco: de schema-helpers schedule.airco_woonkamer en schedule.airco_zolder
+# (Instellingen > Apparaten & diensten > Helpers; per dag blokken tekenen). Begin van een blok =
+# airco aan met de stand/temperatuur van die airco, einde = uit. Alleen als "Weekschema actief" aan staat.
+# Die helpers zijn in de interface gemaakt (niet in git); de bloktijden staan in .storage/schedule.
+#
+# Zondagochtend (woonkamer, om de week): "volgende keer" schuift na elke keer 14 dagen op.
+#
+# Daarnaast: de status van de airco's elke 5 minuten verversen.
 
 input_boolean:
   airco_woonkamer_schema:
     name: Airco zondagochtend (om de week)
     icon: mdi:calendar-sync
+  airco_woonkamer_weekschema:
+    name: Weekschema actief
+    icon: mdi:calendar-week
+  airco_zolder_weekschema:
+    name: Weekschema actief
+    icon: mdi:calendar-week
 
 input_datetime:
   airco_woonkamer_volgende:
@@ -26,6 +37,15 @@ input_select:
       - Automatisch
       - Drogen
       - Ventileren
+  airco_zolder_stand:
+    name: Stand
+    icon: mdi:hvac
+    options:
+      - Verwarmen
+      - Koelen
+      - Automatisch
+      - Drogen
+      - Ventileren
 
 input_number:
   airco_woonkamer_temperatuur:
@@ -35,6 +55,59 @@ input_number:
     step: 0.5
     unit_of_measurement: "°C"
     icon: mdi:thermometer
+  airco_zolder_temperatuur:
+    name: Temperatuur
+    min: 16
+    max: 30
+    step: 0.5
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer
+
+script:
+  # Airco aanzetten met de stand en temperatuur die voor die airco zijn ingesteld.
+  airco_aanzetten:
+    alias: Airco aanzetten volgens instellingen
+    icon: mdi:air-conditioner
+    mode: parallel
+    fields:
+      airco:
+        name: Airco
+        description: woonkamer of zolder
+        required: true
+        selector:
+          select:
+            options: [woonkamer, zolder]
+      reden:
+        name: Reden (voor het logboek)
+        selector:
+          text:
+    variables:
+      klimaat: >
+        {{ {'woonkamer': 'climate.living_room_woonkamer_air_conditioning',
+            'zolder': 'climate.zolder_zolder_air_conditioning_air_care'}[airco] }}
+      stand: "{{ states('input_select.airco_' ~ airco ~ '_stand') }}"
+      temperatuur: "{{ states('input_number.airco_' ~ airco ~ '_temperatuur') | float(21) }}"
+    sequence:
+      - action: climate.set_hvac_mode
+        target:
+          entity_id: "{{ klimaat }}"
+        data:
+          hvac_mode: >
+            {{ {'Verwarmen': 'heat', 'Koelen': 'cool', 'Automatisch': 'auto',
+                'Drogen': 'dry', 'Ventileren': 'fan_only'}[stand] }}
+      - if:
+          - condition: template # drogen en ventileren hebben geen doeltemperatuur
+            value_template: "{{ stand in ['Verwarmen', 'Koelen', 'Automatisch'] }}"
+        then:
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ klimaat }}"
+            data:
+              temperature: "{{ temperatuur }}"
+      - action: logbook.log
+        data:
+          name: "Airco {{ airco }}"
+          message: "aangezet{{ ' (' ~ reden ~ ')' if reden is defined and reden else '' }}: {{ stand | lower }}, {{ temperatuur }} °C"
 
 # Rekenen via de tijdstempel in lokale tijd: + 14 dagen houdt zo ook bij zomer-/wintertijd 08:00.
 automation:
@@ -57,28 +130,10 @@ automation:
       - condition: state
         entity_id: input_boolean.airco_woonkamer_schema
         state: "on"
-      - action: climate.set_hvac_mode
-        target:
-          entity_id: climate.living_room_woonkamer_air_conditioning
+      - action: script.airco_aanzetten
         data:
-          hvac_mode: >
-            {{ {'Verwarmen': 'heat', 'Koelen': 'cool', 'Automatisch': 'auto',
-                'Drogen': 'dry', 'Ventileren': 'fan_only'}[states('input_select.airco_woonkamer_stand')] }}
-      - if:
-          - condition: template # drogen en ventileren hebben geen doeltemperatuur
-            value_template: "{{ states('input_select.airco_woonkamer_stand') in ['Verwarmen', 'Koelen', 'Automatisch'] }}"
-        then:
-          - action: climate.set_temperature
-            target:
-              entity_id: climate.living_room_woonkamer_air_conditioning
-            data:
-              temperature: "{{ states('input_number.airco_woonkamer_temperatuur') | float(21) }}"
-      - action: logbook.log
-        data:
-          name: Airco woonkamer
-          message: >
-            aangezet volgens schema ({{ states('input_select.airco_woonkamer_stand') | lower }},
-            {{ states('input_number.airco_woonkamer_temperatuur') }} °C)
+          airco: woonkamer
+          reden: zondagochtend
 
   # Valt de volgende keer in het verleden (Home Assistant stond uit, of een datum in het verleden
   # ingesteld)? Dan doorschuiven naar de eerstvolgende keer in hetzelfde ritme.
@@ -121,3 +176,43 @@ automation:
             - switch.living_room_woonkamer_air_conditioning_power
             - switch.zolder_zolder_air_conditioning_air_care_power
         continue_on_error: true
+
+  # ------------------------------------------------------------- weekschema
+  - id: airco_weekschema
+    alias: Airco's - weekschema
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id:
+          - schedule.airco_woonkamer
+          - schedule.airco_zolder
+        from:
+          - "on"
+          - "off"
+        to:
+          - "on"
+          - "off"
+    variables:
+      airco: "{{ trigger.entity_id.split('.')[1].replace('airco_', '') }}"
+    conditions:
+      - condition: template
+        value_template: "{{ is_state('input_boolean.airco_' ~ airco ~ '_weekschema', 'on') }}"
+    actions:
+      - if:
+          - condition: template
+            value_template: "{{ trigger.to_state.state == 'on' }}"
+        then:
+          - action: script.airco_aanzetten
+            data:
+              airco: "{{ airco }}"
+              reden: weekschema
+        else:
+          - action: climate.turn_off
+            target:
+              entity_id: >
+                {{ {'woonkamer': 'climate.living_room_woonkamer_air_conditioning',
+                    'zolder': 'climate.zolder_zolder_air_conditioning_air_care'}[airco] }}
+          - action: logbook.log
+            data:
+              name: "Airco {{ airco }}"
+              message: uitgezet (weekschema)

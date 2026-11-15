@@ -1,0 +1,143 @@
+# Airco's: bediening, weekschema en verbruik van de airco's in de woonkamer en op zolder.
+# Automatiseringen: packages/airco_schema.yaml.
+# Weekschema bewerken: tik op de tegel > tandwiel (rechtsboven) > blokken per dag tekenen.
+title: Airco's
+views:
+  - title: Airco's
+    path: aircos
+    icon: mdi:air-conditioner
+    type: sections
+    max_columns: 3
+    sections:
+      # ------------------------------------------------------------ woonkamer
+      - type: grid
+        cards:
+          - type: heading
+            heading: Woonkamer
+            icon: mdi:sofa
+          - type: tile
+            entity: climate.living_room_woonkamer_air_conditioning
+            name: Woonkamer
+            state_content:
+              - state
+              - current_temperature
+            features:
+              - type: climate-hvac-modes
+                hvac_modes: [heat, cool, auto, dry, fan_only, "off"]
+              - type: target-temperature
+            grid_options:
+              columns: full
+          - type: heading
+            heading: Weekschema
+            heading_style: subtitle
+            icon: mdi:calendar-week
+          - type: tile
+            entity: schedule.airco_woonkamer
+            name: Weekschema bewerken
+            icon: mdi:calendar-edit
+            hide_state: true
+            grid_options:
+              columns: full
+          - type: markdown
+            grid_options:
+              columns: full
+            content: |
+              {% set v = state_attr('schedule.airco_woonkamer', 'next_event') %}
+              {% if not is_state('input_boolean.airco_woonkamer_weekschema', 'on') %}*Weekschema staat uit.*
+              {% elif v %}Volgende: **{{ 'uit' if is_state('schedule.airco_woonkamer', 'on') else 'aan' }}** op
+              {{ as_local(as_datetime(v)).strftime('%A %d-%m om %H:%M') | replace('Monday','maandag') | replace('Tuesday','dinsdag') | replace('Wednesday','woensdag') | replace('Thursday','donderdag') | replace('Friday','vrijdag') | replace('Saturday','zaterdag') | replace('Sunday','zondag') }}
+              {% else %}*Nog geen blokken in het weekschema.*{% endif %}
+          - type: entities
+            grid_options:
+              columns: full
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.airco_woonkamer_weekschema
+              - entity: input_select.airco_woonkamer_stand
+              - entity: input_number.airco_woonkamer_temperatuur
+          - type: heading
+            heading: Zondagochtend (om de week)
+            heading_style: subtitle
+            icon: mdi:calendar-sync
+          - type: entities
+            grid_options:
+              columns: full
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.airco_woonkamer_schema
+                name: Om de week aan
+              - entity: input_datetime.airco_woonkamer_volgende
+                name: Volgende keer
+
+      # ------------------------------------------------------------ zolder
+      - type: grid
+        cards:
+          - type: heading
+            heading: Zolder
+            icon: mdi:home-roof
+          - type: tile
+            entity: climate.zolder_zolder_air_conditioning_air_care
+            name: Zolder
+            state_content:
+              - state
+              - current_temperature
+            features:
+              - type: climate-hvac-modes
+                hvac_modes: [heat, cool, auto, dry, fan_only, "off"]
+              - type: target-temperature
+            grid_options:
+              columns: full
+          - type: heading
+            heading: Weekschema
+            heading_style: subtitle
+            icon: mdi:calendar-week
+          - type: tile
+            entity: schedule.airco_zolder
+            name: Weekschema bewerken
+            icon: mdi:calendar-edit
+            hide_state: true
+            grid_options:
+              columns: full
+          - type: markdown
+            grid_options:
+              columns: full
+            content: |
+              {% set v = state_attr('schedule.airco_zolder', 'next_event') %}
+              {% if not is_state('input_boolean.airco_zolder_weekschema', 'on') %}*Weekschema staat uit.*
+              {% elif v %}Volgende: **{{ 'uit' if is_state('schedule.airco_zolder', 'on') else 'aan' }}** op
+              {{ as_local(as_datetime(v)).strftime('%A %d-%m om %H:%M') | replace('Monday','maandag') | replace('Tuesday','dinsdag') | replace('Wednesday','woensdag') | replace('Thursday','donderdag') | replace('Friday','vrijdag') | replace('Saturday','zaterdag') | replace('Sunday','zondag') }}
+              {% else %}*Nog geen blokken in het weekschema.*{% endif %}
+          - type: entities
+            grid_options:
+              columns: full
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.airco_zolder_weekschema
+              - entity: input_select.airco_zolder_stand
+              - entity: input_number.airco_zolder_temperatuur
+
+
+      # ------------------------------------------------------------ verbruik
+      - type: grid
+        cards:
+          - type: heading
+            heading: Verbruik
+            icon: mdi:lightning-bolt
+          - type: tile
+            entity: sensor.living_room_woonkamer_air_conditioning_energy_today
+            name: Woonkamer vandaag
+          - type: tile
+            entity: sensor.zolder_zolder_air_conditioning_air_care_energy_today
+            name: Zolder vandaag
+          - type: tile
+            entity: sensor.living_room_woonkamer_air_conditioning_energy_this_month
+            name: Woonkamer deze maand
+          - type: tile
+            entity: sensor.zolder_zolder_air_conditioning_air_care_energy_this_month
+            name: Zolder deze maand
+          - type: tile
+            entity: sensor.living_room_woonkamer_air_conditioning_filter_remaining
+            name: Filter woonkamer
+          - type: tile
+            entity: sensor.zolder_zolder_air_conditioning_air_care_filter_remaining
+            name: Filter zolder
