@@ -182,6 +182,50 @@ views:
             grid_options:
               columns: full
 
+      # ------------------------------------------------------------ zonnepanelen
+      - type: grid
+        cards:
+          - type: heading
+            heading: Zonnepanelen
+            icon: mdi:solar-power-variant
+          - type: tile
+            entity: sensor.zonnepanelen_vermogen
+            name: Nu
+            icon: mdi:solar-power
+          - type: tile
+            entity: sensor.zonnepanelen_opwek_vandaag
+            name: Vandaag
+            icon: mdi:white-balance-sunny
+          - type: tile
+            entity: sensor.zonnepanelen_opwek_7_dagen
+            name: 7 dagen
+            icon: mdi:calendar-week
+          - type: tile
+            entity: sensor.zonnepanelen_opwek_totaal
+            name: Totaal
+            icon: mdi:counter
+          - type: statistics-graph
+            title: Opwek per dag
+            entities:
+              - entity: sensor.zonnepanelen_opwek_totaal
+                name: Opwek
+            stat_types: [change]
+            chart_type: bar
+            period: day
+            days_to_show: 14
+            grid_options:
+              columns: full
+          - type: button
+            name: Energie-dashboard
+            icon: mdi:chart-bar
+            show_state: false
+            tap_action:
+              action: navigate
+              navigation_path: /energy
+            grid_options:
+              columns: full
+              rows: 1
+
       # ------------------------------------------------------------ huishouden
       - type: grid
         cards:
