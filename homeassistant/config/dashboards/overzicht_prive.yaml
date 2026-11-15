@@ -114,11 +114,22 @@ views:
               columns: full
           - type: tile
             entity: media_player.living_room_lg_webos_tv_oled65b29la
-            name: TV woonkamer
+            name: LG tv woonkamer
             icon: mdi:television
             tap_action:
               action: navigate
               navigation_path: /dashboard-afstandsbediening
+            features:
+              - type: media-player-volume-slider
+            grid_options:
+              columns: full
+          - type: tile
+            entity: media_player.samsung_tv_zolder
+            name: Samsung TV zolder
+            icon: mdi:television
+            tap_action:
+              action: navigate
+              navigation_path: /dashboard-afstandsbediening/samsung
             features:
               - type: media-player-volume-slider
             grid_options:

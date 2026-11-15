@@ -1,8 +1,9 @@
-# Afstandsbediening voor de LG OLED65B29LA in de woonkamer.
+# Afstandsbedieningen: LG OLED65B29LA in de woonkamer en Samsung QLED (QE50Q60D) op zolder.
+# Samsung-toetsen: https://www.home-assistant.io/integrations/samsungtv/#remote
 # Gegenereerd; pas gerust aan. Knoppen: https://www.home-assistant.io/integrations/webostv/#actions
 title: Afstandsbediening
 views:
-  - title: Woonkamer-tv
+  - title: LG tv woonkamer
     path: tv
     icon: mdi:remote-tv
     cards:
@@ -352,3 +353,266 @@ views:
                     entity_id: media_player.living_room_lg_webos_tv_oled65b29la
                   data:
                     source: "HDMI 4"
+
+  - title: Samsung TV zolder
+    path: samsung
+    icon: mdi:television
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: media-control
+            entity: media_player.samsung_tv_zolder
+          - type: grid
+            columns: 3
+            square: false
+            cards:
+              - type: button
+                name: Aan/uit
+                icon: mdi:power
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_POWER
+              - type: button
+                name: Dempen
+                icon: mdi:volume-mute
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_MUTE
+              - type: button
+                name: Instellingen
+                icon: mdi:cog
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_MENU
+          - type: grid
+            title: Navigatie
+            columns: 3
+            square: false
+            cards:
+              - type: button
+                name: Home
+                icon: mdi:home
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_HOME
+              - type: button
+                name: Omhoog
+                icon: mdi:chevron-up
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_UP
+              - type: button
+                name: Info
+                icon: mdi:information-outline
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_INFO
+              - type: button
+                name: Links
+                icon: mdi:chevron-left
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_LEFT
+              - type: button
+                name: OK
+                icon: mdi:circle-medium
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_ENTER
+              - type: button
+                name: Rechts
+                icon: mdi:chevron-right
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_RIGHT
+              - type: button
+                name: Terug
+                icon: mdi:arrow-u-left-top
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_RETURN
+              - type: button
+                name: Omlaag
+                icon: mdi:chevron-down
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_DOWN
+              - type: button
+                name: Afsluiten
+                icon: mdi:close
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_EXIT
+          - type: grid
+            title: Volume en kanalen
+            columns: 4
+            square: false
+            cards:
+              - type: button
+                name: Vol −
+                icon: mdi:volume-minus
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_VOLDOWN
+              - type: button
+                name: Vol +
+                icon: mdi:volume-plus
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_VOLUP
+              - type: button
+                name: Kan −
+                icon: mdi:chevron-down-box
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_CHDOWN
+              - type: button
+                name: Kan +
+                icon: mdi:chevron-up-box
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_CHUP
+          - type: grid
+            title: Afspelen
+            columns: 4
+            square: false
+            cards:
+              - type: button
+                name: Spoel terug
+                icon: mdi:rewind
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_REWIND
+              - type: button
+                name: Afspelen
+                icon: mdi:play
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_PLAY
+              - type: button
+                name: Pauze
+                icon: mdi:pause
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_PAUSE
+              - type: button
+                name: Spoel vooruit
+                icon: mdi:fast-forward
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_FF
+          - type: grid
+            title: Bronnen
+            columns: 3
+            square: false
+            cards:
+              - type: button
+                name: Tv
+                icon: mdi:television-classic
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_TV
+              - type: button
+                name: HDMI
+                icon: mdi:video-input-hdmi
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_HDMI
+              - type: button
+                name: Bron kiezen
+                icon: mdi:import
+                tap_action:
+                  action: perform-action
+                  perform_action: remote.send_command
+                  target:
+                    entity_id: remote.samsung_tv_zolder
+                  data:
+                    command: KEY_SOURCE
