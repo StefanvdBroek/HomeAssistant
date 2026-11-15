@@ -1,4 +1,4 @@
-# Airco woonkamer (beneden) om de week op zondagochtend aan.
+# Airco woonkamer (beneden) om de week op zondagochtend aan, en de status van de airco's actueel houden.
 # Alles in te stellen op het dashboard "Overzicht" (blok Klimaat):
 #   - schema aan/uit
 #   - volgende keer (datum + tijd): schuift na elke keer vanzelf 14 dagen op, zo kies je ook welke zondagen
@@ -103,3 +103,21 @@ automation:
             {% set v = as_local(as_datetime(state_attr('input_datetime.airco_woonkamer_volgende', 'timestamp'))) %}
             {% set stappen = (((now() - v).total_seconds() / 86400 / 14) | round(0, 'ceil')) | int %}
             {{ (v + timedelta(days=14 * stappen)).strftime('%Y-%m-%d %H:%M:%S') }}
+
+  # LG ThinQ meldt wijzigingen normaal direct, maar een aan/uit via de afstandsbediening komt
+  # soms niet door: daarom elke 5 minuten zelf de status van beide airco's opvragen.
+  - id: airco_status_verversen
+    alias: Airco's - status elke 5 minuten verversen
+    mode: single
+    triggers:
+      - trigger: time_pattern
+        minutes: /5
+    actions:
+      - action: homeassistant.update_entity
+        target:
+          entity_id:
+            - climate.living_room_woonkamer_air_conditioning
+            - climate.zolder_zolder_air_conditioning_air_care
+            - switch.living_room_woonkamer_air_conditioning_power
+            - switch.zolder_zolder_air_conditioning_air_care_power
+        continue_on_error: true
