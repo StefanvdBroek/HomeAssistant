@@ -161,6 +161,21 @@ views:
             name: Luchtvochtigheid woonkamer
             icon: mdi:water-percent
           - type: heading
+            heading: Airco zondagochtend
+            heading_style: subtitle
+            icon: mdi:calendar-sync
+          - type: entities
+            grid_options:
+              columns: full
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.airco_woonkamer_schema
+                name: Om de week aan
+              - entity: input_datetime.airco_woonkamer_volgende
+                name: Volgende keer
+              - entity: input_select.airco_woonkamer_stand
+              - entity: input_number.airco_woonkamer_temperatuur
+          - type: heading
             heading: Stroom (airco's en wasmachine)
             heading_style: subtitle
             icon: mdi:lightning-bolt

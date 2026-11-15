@@ -1,0 +1,105 @@
+# Airco woonkamer (beneden) om de week op zondagochtend aan.
+# Alles in te stellen op het dashboard "Overzicht" (blok Klimaat):
+#   - schema aan/uit
+#   - volgende keer (datum + tijd): schuift na elke keer vanzelf 14 dagen op, zo kies je ook welke zondagen
+#   - stand en temperatuur
+
+input_boolean:
+  airco_woonkamer_schema:
+    name: Airco zondagochtend (om de week)
+    icon: mdi:calendar-sync
+
+input_datetime:
+  airco_woonkamer_volgende:
+    name: Volgende keer aan
+    has_date: true
+    has_time: true
+    icon: mdi:calendar-clock
+
+input_select:
+  airco_woonkamer_stand:
+    name: Stand
+    icon: mdi:hvac
+    options:
+      - Verwarmen
+      - Koelen
+      - Automatisch
+      - Drogen
+      - Ventileren
+
+input_number:
+  airco_woonkamer_temperatuur:
+    name: Temperatuur
+    min: 16
+    max: 30
+    step: 0.5
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer
+
+# Rekenen via de tijdstempel in lokale tijd: + 14 dagen houdt zo ook bij zomer-/wintertijd 08:00.
+automation:
+  - id: airco_woonkamer_schema
+    alias: Airco woonkamer - om de week op zondag aan
+    mode: single
+    triggers:
+      - trigger: time
+        at: input_datetime.airco_woonkamer_volgende
+    actions:
+      # Altijd eerst de volgende keer plannen (+14 dagen), ook als het schema uit staat,
+      # zodat het ritme van "om de week" blijft kloppen.
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.airco_woonkamer_volgende
+        data:
+          datetime: >
+            {{ (as_local(as_datetime(state_attr('input_datetime.airco_woonkamer_volgende', 'timestamp'))) + timedelta(days=14))
+               .strftime('%Y-%m-%d %H:%M:%S') }}
+      - condition: state
+        entity_id: input_boolean.airco_woonkamer_schema
+        state: "on"
+      - action: climate.set_hvac_mode
+        target:
+          entity_id: climate.living_room_woonkamer_air_conditioning
+        data:
+          hvac_mode: >
+            {{ {'Verwarmen': 'heat', 'Koelen': 'cool', 'Automatisch': 'auto',
+                'Drogen': 'dry', 'Ventileren': 'fan_only'}[states('input_select.airco_woonkamer_stand')] }}
+      - if:
+          - condition: template # drogen en ventileren hebben geen doeltemperatuur
+            value_template: "{{ states('input_select.airco_woonkamer_stand') in ['Verwarmen', 'Koelen', 'Automatisch'] }}"
+        then:
+          - action: climate.set_temperature
+            target:
+              entity_id: climate.living_room_woonkamer_air_conditioning
+            data:
+              temperature: "{{ states('input_number.airco_woonkamer_temperatuur') | float(21) }}"
+      - action: logbook.log
+        data:
+          name: Airco woonkamer
+          message: >
+            aangezet volgens schema ({{ states('input_select.airco_woonkamer_stand') | lower }},
+            {{ states('input_number.airco_woonkamer_temperatuur') }} °C)
+
+  # Valt de volgende keer in het verleden (Home Assistant stond uit, of een datum in het verleden
+  # ingesteld)? Dan doorschuiven naar de eerstvolgende keer in hetzelfde ritme.
+  - id: airco_woonkamer_schema_bijwerken
+    alias: Airco woonkamer - volgende keer niet in het verleden
+    mode: single
+    triggers:
+      - trigger: homeassistant
+        event: start
+      - trigger: time
+        at: "00:05:00"
+    conditions:
+      - condition: template
+        value_template: >
+          {{ as_local(as_datetime(state_attr('input_datetime.airco_woonkamer_volgende', 'timestamp'))) < now() - timedelta(minutes=5) }}
+    actions:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.airco_woonkamer_volgende
+        data:
+          datetime: >
+            {% set v = as_local(as_datetime(state_attr('input_datetime.airco_woonkamer_volgende', 'timestamp'))) %}
+            {% set stappen = (((now() - v).total_seconds() / 86400 / 14) | round(0, 'ceil')) | int %}
+            {{ (v + timedelta(days=14 * stappen)).strftime('%Y-%m-%d %H:%M:%S') }}
