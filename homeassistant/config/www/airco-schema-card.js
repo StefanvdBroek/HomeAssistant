@@ -14,6 +14,40 @@ const VENTILATOR = { auto: "Automatisch", low: "Laag", low_mid: "Laag-midden", m
 
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+// Datums in lokale tijd; weekdag 0 = maandag (zoals in Home Assistant).
+const isoDatum = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const weekdag = (d) => (d.getDay() + 6) % 7;
+const kortDatum = (d) => `${DAGEN[weekdag(d)].toLowerCase()} ${d.getDate()}-${d.getMonth() + 1}`;
+const vanIso = (s) => { const [j, m, d] = s.split("-").map(Number); return new Date(j, m - 1, d); };
+
+// Eerstvolgende datums (vanaf vandaag) waarop een dag uit 'dagen' valt.
+function volgendeDatums(dagen, aantal) {
+  const uit = []; const d = new Date(); d.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 21 && uit.length < aantal; i++, d.setDate(d.getDate() + 1)) {
+    if (dagen.includes(weekdag(d))) uit.push(new Date(d));
+  }
+  return uit;
+}
+// ISO-weeknummer (zoals in de agenda; week begint op maandag).
+function isoWeek(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  t.setUTCDate(t.getUTCDate() + 3 - ((t.getUTCDay() + 6) % 7)); // donderdag van die week
+  const jan4 = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+  return 1 + Math.round(((t - jan4) / 86400000 - 3 + ((jan4.getUTCDay() + 6) % 7)) / 7);
+}
+// Zelfde regel als in de integratie: om de week = alleen in de even of de oneven weeknummers.
+const dezeWeek = (r, d) => r.interval !== 2 || !r.weken || ((isoWeek(d) % 2 === 0) === (r.weken === "even"));
+// Eerstvolgende keer dat het blok begint (vandaag telt alleen als de begintijd nog moet komen).
+function volgendeKeer(r) {
+  const nu = new Date(); const d = new Date(); d.setHours(0, 0, 0, 0);
+  const [u, m] = r.begin.split(":").map(Number);
+  for (let i = 0; i < 21; i++, d.setDate(d.getDate() + 1)) {
+    const start = new Date(d); start.setHours(u, m, 0, 0);
+    if (start > nu && r.dagen.includes(weekdag(d)) && dezeWeek(r, d)) return new Date(d);
+  }
+  return null;
+}
+
 function dagenTekst(dagen) {
   const s = [...dagen].sort().join(",");
   if (s === "0,1,2,3,4,5,6") return "Elke dag";
@@ -63,15 +97,15 @@ class AircoSchemaCard extends HTMLElement {
         ${regels.map((r) => `
           <div class="blok ${a.aan ? "" : "grijs"}">
             <div class="info">
-              <div class="tijd">${esc(r.begin)} – ${esc(r.eind)} <span class="dagen">${esc(dagenTekst(r.dagen))}</span></div>
-              <div class="details">${esc(MODI[r.modus] || r.modus)}${MET_TEMP.includes(r.modus) && r.temperatuur ? ` · ${r.temperatuur} °C` : ""}${r.ventilator ? ` · ventilator ${esc((VENTILATOR[r.ventilator] || r.ventilator).toLowerCase())}` : ""}</div>
+              <div class="tijd">${r.eind ? `${esc(r.begin)} – ${esc(r.eind)}` : `vanaf ${esc(r.begin)}`} <span class="dagen">${esc(dagenTekst(r.dagen))}${r.interval === 2 ? `, om de week (${r.weken === "oneven" ? "oneven" : "even"} weken)` : ""}</span></div>
+              <div class="details">${esc(MODI[r.modus] || r.modus)}${MET_TEMP.includes(r.modus) && r.temperatuur ? ` · ${r.temperatuur} °C` : ""}${r.ventilator ? ` · ventilator ${esc((VENTILATOR[r.ventilator] || r.ventilator).toLowerCase())}` : ""}${r.eind ? "" : " · gaat niet vanzelf uit"}${r.interval === 2 && volgendeKeer(r) ? ` · volgende keer ${kortDatum(volgendeKeer(r))}` : ""}</div>
             </div>
             <button class="icoon" data-bewerk="${esc(r.id)}" aria-label="Wijzigen"><ha-icon icon="mdi:pencil"></ha-icon></button>
             <button class="icoon weg" data-weg="${esc(r.id)}" aria-label="Verwijderen"><ha-icon icon="mdi:delete"></ha-icon></button>
           </div>
           ${this._verwijder === r.id ? `
           <div class="zeker">
-            Weet je zeker dat je het blok <b>${esc(r.begin)} – ${esc(r.eind)} (${esc(dagenTekst(r.dagen))})</b> wilt verwijderen?
+            Weet je zeker dat je het blok <b>${esc(r.begin)}${r.eind ? " – " + esc(r.eind) : ""} (${esc(dagenTekst(r.dagen))})</b> wilt verwijderen?
             <div class="rij"><button class="nee" id="nee">Annuleren</button><button class="ja" id="ja">Verwijderen</button></div>
           </div>` : ""}`).join("")}
         ${this._bewerk ? this._formulier() : `<button class="toevoegen" id="nieuw"><ha-icon icon="mdi:plus"></ha-icon> Tijdsblok toevoegen</button>`}
@@ -92,8 +126,10 @@ class AircoSchemaCard extends HTMLElement {
         </div>
         <div class="twee">
           <label>Begin<input type="time" id="begin" value="${esc(b.begin)}"></label>
-          <label>Eind<input type="time" id="eind" value="${esc(b.eind)}"></label>
+          <label>Eind <small>(leeg = niet uit)</small><input type="time" id="eind" value="${esc(b.eind || "")}"></label>
         </div>
+        <label class="vinkje"><input type="checkbox" id="omdeweek" ${b.interval === 2 ? "checked" : ""}> Om de week</label>
+        <label id="weken-label" ${b.interval === 2 ? "" : "hidden"}>Welke weken<select id="weken">${this._wekenOpties(b)}</select></label>
         <label>Modus<select id="modus">${Object.entries(MODI).map(([k, v]) => `<option value="${k}" ${b.modus === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
         <div class="twee">
           <label id="temp-label">Temperatuur (°C)<input type="number" id="temperatuur" inputmode="decimal"
@@ -141,15 +177,20 @@ class AircoSchemaCard extends HTMLElement {
     const b = this._bewerk;
     const bewaarVelden = () => {
       b.begin = $("begin").value; b.eind = $("eind").value; b.modus = $("modus").value;
+      if ($("weken")) b.weken = $("weken").value;
       b.temperatuur = parseFloat($("temperatuur").value); b.ventilator = $("ventilator").value;
     };
     const tempZichtbaar = () => { $("temp-label").style.visibility = MET_TEMP.includes($("modus").value) ? "visible" : "hidden"; };
     tempZichtbaar();
     $("modus").addEventListener("change", tempZichtbaar);
+    $("omdeweek").addEventListener("change", () => {
+      bewaarVelden(); b.interval = $("omdeweek").checked ? 2 : 1; this._teken();
+    });
     r.querySelectorAll("[data-dag]").forEach((knop) => knop.addEventListener("click", () => {
       const d = +knop.dataset.dag;
       b.dagen = b.dagen.includes(d) ? b.dagen.filter((x) => x !== d) : [...b.dagen, d];
       knop.classList.toggle("aan");
+      if (b.interval === 2) { bewaarVelden(); this._teken(); } // keuze "eerste keer" hangt van de dagen af
     }));
     r.querySelectorAll("[data-snel]").forEach((knop) => knop.addEventListener("click", () => {
       bewaarVelden(); b.dagen = knop.dataset.snel.split(",").map(Number); this._teken();
@@ -158,10 +199,12 @@ class AircoSchemaCard extends HTMLElement {
     $("opslaan").addEventListener("click", async () => {
       bewaarVelden();
       const fout = !b.dagen.length ? "Kies minstens één dag."
-        : !b.begin || !b.eind ? "Vul een begin- en eindtijd in."
-        : b.begin === b.eind ? "Begin- en eindtijd mogen niet gelijk zijn." : "";
+        : !b.begin ? "Vul een begintijd in."
+        : b.eind && b.begin === b.eind ? "Begin- en eindtijd mogen niet gelijk zijn."
+        : b.interval === 2 && !b.weken ? "Kies even of oneven weken." : "";
       if (fout) { $("melding").textContent = fout; return; }
-      const gegevens = { dagen: b.dagen, begin: b.begin, eind: b.eind, modus: b.modus,
+      const gegevens = { dagen: b.dagen, begin: b.begin, eind: b.eind || null, modus: b.modus,
+                         interval: b.interval === 2 ? 2 : 1, weken: b.interval === 2 ? b.weken : null,
                          ventilator: b.ventilator || null,
                          temperatuur: MET_TEMP.includes(b.modus) && !isNaN(b.temperatuur) ? b.temperatuur : null };
       if (b.id) gegevens.id = b.id;
@@ -169,6 +212,20 @@ class AircoSchemaCard extends HTMLElement {
       const gelukt = await this._actie("blok_opslaan", gegevens, $("melding"));
       if (gelukt) { this._bewerk = null; this._teken(); } else { $("opslaan").disabled = false; }
     });
+  }
+
+  // Keuze bij om de week: even of oneven weeknummers, met de eerstvolgende datum erbij.
+  _wekenOpties(b) {
+    // Zelfde berekening als "volgende keer" in de lijst (vandaag telt alleen als de begintijd nog komt).
+    const eerste = (even) => b.dagen.length && b.begin
+      ? volgendeKeer({ dagen: b.dagen, begin: b.begin, interval: 2, weken: even ? "even" : "oneven" }) : null;
+    const deze = isoWeek(new Date());
+    if (!b.weken) b.weken = deze % 2 === 0 ? "even" : "oneven";
+    return ["even", "oneven"].map((w) => {
+      const d = eerste(w === "even");
+      const voorbeeld = d ? ` – eerst ${kortDatum(d)} (week ${isoWeek(d)})` : "";
+      return `<option value="${w}" ${b.weken === w ? "selected" : ""}>${w === "even" ? "Even" : "Oneven"} weken${voorbeeld}</option>`;
+    }).join("");
   }
 
   async _actie(naam, gegevens, meldingVeld) {
@@ -222,6 +279,10 @@ const STIJL = `
   .twee { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   input, select { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; padding: 10px; margin-top: 4px; border-radius: 8px;
                   border: 1px solid var(--divider-color, #ccc); background: var(--card-background-color, #fff); color: var(--primary-text-color); }
+  label.vinkje { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--primary-text-color); margin-top: 12px; }
+  label.vinkje input { width: 20px; height: 20px; margin: 0; accent-color: var(--primary-color); }
+  label[hidden] { display: none; }
+  small { font-size: 11px; }
   .melding { color: var(--error-color, #db4437); font-size: 14px; min-height: 1em; margin-top: 8px; }
 `;
 

@@ -6,7 +6,9 @@ blok_opslaan:
     id: { name: Id (alleen bij wijzigen), selector: { text: } }
     dagen: { name: Dagen (0 = maandag … 6 = zondag), required: true, example: "[0, 1, 2, 3, 4]", selector: { object: } }
     begin: { name: Begintijd, required: true, example: "07:00", selector: { text: } }
-    eind: { name: Eindtijd, required: true, example: "09:00", selector: { text: } }
+    eind: { name: Eindtijd (leeg = niet uitzetten), example: "09:00", selector: { text: } }
+    interval: { name: "Elke week (1) of om de week (2)", example: 1, selector: { number: { min: 1, max: 2 } } }
+    weken: { name: "Om de week: even of oneven weeknummers", example: even, selector: { select: { options: [even, oneven] } } }
     modus: { name: Modus, required: true, selector: { select: { options: [heat, cool, auto, dry, fan_only] } } }
     temperatuur: { name: Temperatuur, selector: { number: { min: 7, max: 35, step: 0.5 } } }
     ventilator: { name: Ventilatorstand, example: auto, selector: { text: } }

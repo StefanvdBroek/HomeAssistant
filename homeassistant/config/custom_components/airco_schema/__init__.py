@@ -1,8 +1,9 @@
 """Airco-schema: eenvoudige tijdsblokken per airco.
 
-Een tijdsblok = dagen + begintijd + eindtijd + modus + temperatuur + ventilatorstand.
-Aan het begin gaat de airco aan met die instellingen, aan het eind weer uit. Loopt een blok over
-middernacht (eind vóór begin), dan valt het eind op de dag erna.
+Een tijdsblok = dagen + begintijd + (optioneel) eindtijd + modus + temperatuur + ventilatorstand,
+elke week of om de week (in de even of de oneven weeknummers). Aan het begin gaat de airco aan met
+die instellingen, aan het eind weer uit (geen eindtijd = alleen aanzetten). Loopt een blok over
+middernacht (eind vóór begin), dan valt het eind op de dag erna en telt het weeknummer van de begindag.
 
 De blokken staan in .storage/airco_schema (niet in git, wel in de back-ups) en worden beheerd
 met de kaart www/airco-schema-card.js op het dashboard "Airco's". De kaart leest
@@ -18,7 +19,7 @@ from __future__ import annotations
 import logging
 import re
 import uuid
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 import voluptuous as vol
 
@@ -71,13 +72,18 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     # ------------------------------------------------------------- acties
     async def blok_opslaan(call: ServiceCall) -> None:
         a = airco_data(call.data["airco"])
-        if call.data["begin"] == call.data["eind"]:
+        if call.data.get("eind") and call.data["begin"] == call.data["eind"]:
             raise vol.Invalid("Begin- en eindtijd zijn gelijk")
+        interval = call.data.get("interval", 1)
+        if interval == 2 and not call.data.get("weken"):
+            raise vol.Invalid("Kies bij 'om de week' even of oneven weken")
         blok = {
             "id": call.data.get("id") or uuid.uuid4().hex[:8],
             "dagen": sorted(set(call.data["dagen"])),
             "begin": call.data["begin"],
-            "eind": call.data["eind"],
+            "eind": call.data.get("eind") or None,
+            "interval": interval,
+            "weken": call.data.get("weken") if interval == 2 else None,
             "modus": call.data["modus"],
             "temperatuur": call.data.get("temperatuur"),
             "ventilator": call.data.get("ventilator"),
@@ -102,7 +108,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         vol.Required("dagen"): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(0, 6))],
                                        vol.Length(min=1)),
         vol.Required("begin"): TIJD,
-        vol.Required("eind"): TIJD,
+        vol.Optional("eind"): vol.Any(None, "", TIJD),
+        vol.Optional("interval", default=1): vol.All(vol.Coerce(int), vol.In([1, 2])),
+        vol.Optional("weken"): vol.Any(None, vol.In(["even", "oneven"])),
         vol.Required("modus"): vol.In(MODI),
         vol.Optional("temperatuur"): vol.Any(None, vol.Coerce(float)),
         vol.Optional("ventilator"): vol.Any(None, cv.string),
@@ -136,19 +144,26 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async def logboek(naam: str, tekst: str) -> None:
         await hass.services.async_call("logbook", "log", {"name": f"Airco {naam}", "message": tekst})
 
+    def deze_week(blok: dict, datum: date) -> bool:
+        """Draait het blok in de week van deze (start)datum? Om de week: even/oneven weeknummer (ISO)."""
+        if blok.get("interval", 1) != 2 or not blok.get("weken"):
+            return True
+        return (datum.isocalendar().week % 2 == 0) == (blok["weken"] == "even")
+
     async def elke_minuut(nu: datetime) -> None:
         nu = dt_util.as_local(nu)
         tijd, dag = nu.strftime("%H:%M"), nu.weekday()
+        vandaag, gisteren = nu.date(), nu.date() - timedelta(days=1)
         for naam in aircos:
             a = data["aircos"][naam]
             if not a.get("aan"):
                 continue
             regels = [r for r in a["regels"] if r.get("actief", True)]
             # Eerst uit, dan aan: sluit een blok aan op een ander, dan blijft hij aan.
-            eind_nu = [r for r in regels if r["eind"] == tijd and (
-                (r["eind"] > r["begin"] and dag in r["dagen"])
-                or (r["eind"] < r["begin"] and (dag - 1) % 7 in r["dagen"]))]
-            begin_nu = [r for r in regels if r["begin"] == tijd and dag in r["dagen"]]
+            eind_nu = [r for r in regels if r.get("eind") == tijd and (
+                (r["eind"] > r["begin"] and dag in r["dagen"] and deze_week(r, vandaag))
+                or (r["eind"] < r["begin"] and (dag - 1) % 7 in r["dagen"] and deze_week(r, gisteren)))]
+            begin_nu = [r for r in regels if r["begin"] == tijd and dag in r["dagen"] and deze_week(r, vandaag)]
             try:
                 if eind_nu and not begin_nu:
                     await uitzetten(naam)

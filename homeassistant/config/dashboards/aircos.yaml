@@ -1,5 +1,5 @@
-# Airco's: bediening en weekschema (tijdsblokken) per airco, plus zondagochtend en verbruik.
-# Schema: custom_components/airco_schema + www/airco-schema-card.js; zondagochtend: packages/airco_schema.yaml.
+# Airco's: bediening en weekschema (tijdsblokken, ook om de week) per airco, plus verbruik.
+# Schema: custom_components/airco_schema + www/airco-schema-card.js.
 title: Airco's
 views:
   - title: Airco's
@@ -55,20 +55,6 @@ views:
 
       - type: grid
         cards:
-          - type: heading
-            heading: Zondagochtend (woonkamer)
-            icon: mdi:calendar-sync
-          - type: entities
-            grid_options:
-              columns: full
-            show_header_toggle: false
-            entities:
-              - entity: input_boolean.airco_woonkamer_schema
-                name: Om de week aan
-              - entity: input_datetime.airco_woonkamer_volgende
-                name: Volgende keer
-              - entity: input_select.airco_woonkamer_stand
-              - entity: input_number.airco_woonkamer_temperatuur
           - type: heading
             heading: Verbruik
             icon: mdi:lightning-bolt
