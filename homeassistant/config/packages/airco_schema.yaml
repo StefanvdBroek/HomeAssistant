@@ -1,9 +1,4 @@
-# Schema's voor de airco's (woonkamer beneden en zolder). Alles op het dashboard "Airco's".
-#
-# Weekschema per airco: de schema-helpers schedule.airco_woonkamer en schedule.airco_zolder
-# (Instellingen > Apparaten & diensten > Helpers; per dag blokken tekenen). Begin van een blok =
-# airco aan met de stand/temperatuur van die airco, einde = uit. Alleen als "Weekschema actief" aan staat.
-# Die helpers zijn in de interface gemaakt (niet in git); de bloktijden staan in .storage/schedule.
+# Airco's, aanvullend op het weekschema (custom_components/airco_schema, dashboard "Airco's"):
 #
 # Zondagochtend (woonkamer, om de week): "volgende keer" schuift na elke keer 14 dagen op.
 #
@@ -13,12 +8,6 @@ input_boolean:
   airco_woonkamer_schema:
     name: Airco zondagochtend (om de week)
     icon: mdi:calendar-sync
-  airco_woonkamer_weekschema:
-    name: Weekschema actief
-    icon: mdi:calendar-week
-  airco_zolder_weekschema:
-    name: Weekschema actief
-    icon: mdi:calendar-week
 
 input_datetime:
   airco_woonkamer_volgende:
@@ -37,25 +26,9 @@ input_select:
       - Automatisch
       - Drogen
       - Ventileren
-  airco_zolder_stand:
-    name: Stand
-    icon: mdi:hvac
-    options:
-      - Verwarmen
-      - Koelen
-      - Automatisch
-      - Drogen
-      - Ventileren
 
 input_number:
   airco_woonkamer_temperatuur:
-    name: Temperatuur
-    min: 16
-    max: 30
-    step: 0.5
-    unit_of_measurement: "°C"
-    icon: mdi:thermometer
-  airco_zolder_temperatuur:
     name: Temperatuur
     min: 16
     max: 30
@@ -72,11 +45,11 @@ script:
     fields:
       airco:
         name: Airco
-        description: woonkamer of zolder
+        description: woonkamer (stand en temperatuur van de zondagochtend)
         required: true
         selector:
           select:
-            options: [woonkamer, zolder]
+            options: [woonkamer]
       reden:
         name: Reden (voor het logboek)
         selector:
@@ -176,43 +149,3 @@ automation:
             - switch.living_room_woonkamer_air_conditioning_power
             - switch.zolder_zolder_air_conditioning_air_care_power
         continue_on_error: true
-
-  # ------------------------------------------------------------- weekschema
-  - id: airco_weekschema
-    alias: Airco's - weekschema
-    mode: queued
-    triggers:
-      - trigger: state
-        entity_id:
-          - schedule.airco_woonkamer
-          - schedule.airco_zolder
-        from:
-          - "on"
-          - "off"
-        to:
-          - "on"
-          - "off"
-    variables:
-      airco: "{{ trigger.entity_id.split('.')[1].replace('airco_', '') }}"
-    conditions:
-      - condition: template
-        value_template: "{{ is_state('input_boolean.airco_' ~ airco ~ '_weekschema', 'on') }}"
-    actions:
-      - if:
-          - condition: template
-            value_template: "{{ trigger.to_state.state == 'on' }}"
-        then:
-          - action: script.airco_aanzetten
-            data:
-              airco: "{{ airco }}"
-              reden: weekschema
-        else:
-          - action: climate.turn_off
-            target:
-              entity_id: >
-                {{ {'woonkamer': 'climate.living_room_woonkamer_air_conditioning',
-                    'zolder': 'climate.zolder_zolder_air_conditioning_air_care'}[airco] }}
-          - action: logbook.log
-            data:
-              name: "Airco {{ airco }}"
-              message: uitgezet (weekschema)

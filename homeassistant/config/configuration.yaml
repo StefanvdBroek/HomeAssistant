@@ -14,6 +14,11 @@ default_config:
 # Foto's van klantkaarten opslaan vanaf de telefoon (custom_components/klantkaarten).
 klantkaarten:
 
+# Weekschema's (tijdsblokken) voor de airco's (custom_components/airco_schema, dashboard "Airco's").
+airco_schema:
+  woonkamer: climate.living_room_woonkamer_air_conditioning
+  zolder: climate.zolder_zolder_air_conditioning_air_care
+
 # Thema's uit de Marketplace (homeassistant/config/themes/, niet in git).
 # Kiezen per gebruiker/apparaat via je profiel > Thema.
 frontend:

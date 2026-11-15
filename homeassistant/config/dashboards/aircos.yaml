@@ -1,6 +1,5 @@
-# Airco's: bediening, weekschema en verbruik van de airco's in de woonkamer en op zolder.
-# Automatiseringen: packages/airco_schema.yaml.
-# Weekschema bewerken: tik op de tegel > tandwiel (rechtsboven) > blokken per dag tekenen.
+# Airco's: bediening en weekschema (tijdsblokken) per airco, plus zondagochtend en verbruik.
+# Schema: custom_components/airco_schema + www/airco-schema-card.js; zondagochtend: packages/airco_schema.yaml.
 title: Airco's
 views:
   - title: Airco's
@@ -9,7 +8,6 @@ views:
     type: sections
     max_columns: 3
     sections:
-      # ------------------------------------------------------------ woonkamer
       - type: grid
         cards:
           - type: heading
@@ -27,49 +25,11 @@ views:
               - type: target-temperature
             grid_options:
               columns: full
-          - type: heading
-            heading: Weekschema
-            heading_style: subtitle
-            icon: mdi:calendar-week
-          - type: tile
-            entity: schedule.airco_woonkamer
-            name: Weekschema bewerken
-            icon: mdi:calendar-edit
-            hide_state: true
+          - type: custom:airco-schema-card
+            airco: woonkamer
+            titel: Schema
             grid_options:
               columns: full
-          - type: markdown
-            grid_options:
-              columns: full
-            content: |
-              {% set v = state_attr('schedule.airco_woonkamer', 'next_event') %}
-              {% if not is_state('input_boolean.airco_woonkamer_weekschema', 'on') %}*Weekschema staat uit.*
-              {% elif v %}Volgende: **{{ 'uit' if is_state('schedule.airco_woonkamer', 'on') else 'aan' }}** op
-              {{ as_local(as_datetime(v)).strftime('%A %d-%m om %H:%M') | replace('Monday','maandag') | replace('Tuesday','dinsdag') | replace('Wednesday','woensdag') | replace('Thursday','donderdag') | replace('Friday','vrijdag') | replace('Saturday','zaterdag') | replace('Sunday','zondag') }}
-              {% else %}*Nog geen blokken in het weekschema.*{% endif %}
-          - type: entities
-            grid_options:
-              columns: full
-            show_header_toggle: false
-            entities:
-              - entity: input_boolean.airco_woonkamer_weekschema
-              - entity: input_select.airco_woonkamer_stand
-              - entity: input_number.airco_woonkamer_temperatuur
-          - type: heading
-            heading: Zondagochtend (om de week)
-            heading_style: subtitle
-            icon: mdi:calendar-sync
-          - type: entities
-            grid_options:
-              columns: full
-            show_header_toggle: false
-            entities:
-              - entity: input_boolean.airco_woonkamer_schema
-                name: Om de week aan
-              - entity: input_datetime.airco_woonkamer_volgende
-                name: Volgende keer
-
-      # ------------------------------------------------------------ zolder
       - type: grid
         cards:
           - type: heading
@@ -87,39 +47,28 @@ views:
               - type: target-temperature
             grid_options:
               columns: full
+          - type: custom:airco-schema-card
+            airco: zolder
+            titel: Schema
+            grid_options:
+              columns: full
+
+      - type: grid
+        cards:
           - type: heading
-            heading: Weekschema
-            heading_style: subtitle
-            icon: mdi:calendar-week
-          - type: tile
-            entity: schedule.airco_zolder
-            name: Weekschema bewerken
-            icon: mdi:calendar-edit
-            hide_state: true
-            grid_options:
-              columns: full
-          - type: markdown
-            grid_options:
-              columns: full
-            content: |
-              {% set v = state_attr('schedule.airco_zolder', 'next_event') %}
-              {% if not is_state('input_boolean.airco_zolder_weekschema', 'on') %}*Weekschema staat uit.*
-              {% elif v %}Volgende: **{{ 'uit' if is_state('schedule.airco_zolder', 'on') else 'aan' }}** op
-              {{ as_local(as_datetime(v)).strftime('%A %d-%m om %H:%M') | replace('Monday','maandag') | replace('Tuesday','dinsdag') | replace('Wednesday','woensdag') | replace('Thursday','donderdag') | replace('Friday','vrijdag') | replace('Saturday','zaterdag') | replace('Sunday','zondag') }}
-              {% else %}*Nog geen blokken in het weekschema.*{% endif %}
+            heading: Zondagochtend (woonkamer)
+            icon: mdi:calendar-sync
           - type: entities
             grid_options:
               columns: full
             show_header_toggle: false
             entities:
-              - entity: input_boolean.airco_zolder_weekschema
-              - entity: input_select.airco_zolder_stand
-              - entity: input_number.airco_zolder_temperatuur
-
-
-      # ------------------------------------------------------------ verbruik
-      - type: grid
-        cards:
+              - entity: input_boolean.airco_woonkamer_schema
+                name: Om de week aan
+              - entity: input_datetime.airco_woonkamer_volgende
+                name: Volgende keer
+              - entity: input_select.airco_woonkamer_stand
+              - entity: input_number.airco_woonkamer_temperatuur
           - type: heading
             heading: Verbruik
             icon: mdi:lightning-bolt
@@ -131,10 +80,10 @@ views:
             name: Zolder vandaag
           - type: tile
             entity: sensor.living_room_woonkamer_air_conditioning_energy_this_month
-            name: Woonkamer deze maand
+            name: Woonkamer maand
           - type: tile
             entity: sensor.zolder_zolder_air_conditioning_air_care_energy_this_month
-            name: Zolder deze maand
+            name: Zolder maand
           - type: tile
             entity: sensor.living_room_woonkamer_air_conditioning_filter_remaining
             name: Filter woonkamer
