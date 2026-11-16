@@ -100,3 +100,18 @@ services:
       - TZ=${TZ:-Europe/Amsterdam}
     network_mode: host
     restart: unless-stopped
+
+  # Matter Server (matter.js; de opvolger van python-matter-server, dezelfde server als de
+  # add-on in Home Assistant OS). De integratie "Matter" verbindt met ws://localhost:5580/ws.
+  # Vereist host-netwerk met IPv6 en multicast: werkt op de mini-pc (Linux), NIET via
+  # Docker Desktop op de Mac. Starten: docker compose --profile matter up -d matter-server
+  matter-server:
+    container_name: matter-server
+    image: ghcr.io/matter-js/matterjs-server:1.6.0
+    profiles: ["matter"]
+    volumes:
+      - ./matter/data:/data
+    environment:
+      - TZ=${TZ:-Europe/Amsterdam}
+    network_mode: host # Matter gebruikt mDNS en IPv6 op het thuisnetwerk
+    restart: unless-stopped

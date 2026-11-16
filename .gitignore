@@ -45,3 +45,5 @@ esphome/config/secrets.yaml
 
 # Python
 __pycache__/
+matter/data/*
+!matter/data/.gitkeep
