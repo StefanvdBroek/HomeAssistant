@@ -13,6 +13,19 @@ views:
           - type: heading
             heading: Woonkamer
             icon: mdi:sofa
+          - type: button
+            entity: switch.living_room_woonkamer_air_conditioning_power
+            name: Airco woonkamer aan/uit
+            icon: mdi:power
+            show_state: true
+            state_color: true
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+            grid_options:
+              columns: full
+              rows: 2
           - type: tile
             entity: climate.living_room_woonkamer_air_conditioning
             name: Woonkamer
@@ -35,6 +48,19 @@ views:
           - type: heading
             heading: Zolder
             icon: mdi:home-roof
+          - type: button
+            entity: switch.zolder_zolder_air_conditioning_air_care_power
+            name: Airco zolder aan/uit
+            icon: mdi:power
+            show_state: true
+            state_color: true
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+            grid_options:
+              columns: full
+              rows: 2
           - type: tile
             entity: climate.zolder_zolder_air_conditioning_air_care
             name: Zolder
