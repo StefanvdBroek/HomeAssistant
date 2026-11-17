@@ -178,3 +178,32 @@ template:
         availability: >
           {{ states('sensor.uptime_kuma_disk_usage') | is_number
              and states('sensor.uptime_kuma_max_disk_usage') | is_number }}
+      - name: Playground schijf
+        unique_id: server_playground_schijf
+        icon: mdi:harddisk
+        unit_of_measurement: "%"
+        state_class: measurement
+        state: >
+          {{ (states('sensor.playground_disk_usage') | float
+              / states('sensor.playground_max_disk_usage') | float * 100) | round(1) }}
+        availability: >
+          {{ states('sensor.playground_disk_usage') | is_number
+             and states('sensor.playground_max_disk_usage') | float(0) > 0 }}
+      - name: Playground schijf vrij
+        unique_id: server_playground_schijf_vrij
+        icon: mdi:harddisk
+        unit_of_measurement: GiB
+        device_class: data_size
+        state_class: measurement
+        state: >
+          {{ (states('sensor.playground_max_disk_usage') | float
+              - states('sensor.playground_disk_usage') | float) | round(1) }}
+        availability: >
+          {{ states('sensor.playground_disk_usage') | is_number
+             and states('sensor.playground_max_disk_usage') | is_number }}
+      # Playground zit (bewust) niet in de wekelijkse Proxmox-back-up; zo blijft de tegel
+      # "Laatste back-up" gelijk aan die van de andere servers en zie je dat er geen is.
+      - name: Playground laatste back-up
+        unique_id: server_playground_laatste_backup
+        icon: mdi:backup-restore
+        state: Geen back-up

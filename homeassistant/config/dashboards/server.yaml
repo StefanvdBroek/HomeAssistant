@@ -244,6 +244,35 @@ views:
               - entity: sensor.uptime_kuma_memory_usage_percentage
                 name: Geheugen
 
+      # --------------------------------------------------- playground
+      # LXC 102 (PlaygroundAdmin). Zit niet in de wekelijkse back-up: de tegel toont dat.
+      - type: grid
+        cards:
+          - type: heading
+            heading: Playground · LXC 102
+            icon: mdi:flask-outline
+            badges:
+              - type: entity
+                entity: sensor.playground_status
+          - <<: *meter_cpu
+            entity: sensor.playground_cpu_usage
+          - <<: *meter_geheugen
+            entity: sensor.playground_memory_usage_percentage
+          - <<: *meter_schijf
+            entity: sensor.playground_schijf
+          - <<: *tegel_sinds
+            entity: sensor.playground_uptime
+          - <<: *tegel_vrij
+            entity: sensor.playground_schijf_vrij
+          - <<: *tegel_backup
+            entity: sensor.playground_laatste_back_up
+          - <<: *grafiek
+            entities:
+              - entity: sensor.playground_cpu_usage
+                name: CPU
+              - entity: sensor.playground_memory_usage_percentage
+                name: Geheugen
+
       # ------------------------------------------------------ add-ons
       - type: grid
         cards:
