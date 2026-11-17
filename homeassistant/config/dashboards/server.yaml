@@ -1,0 +1,273 @@
+# Server: de Home Assistant-VM (System Monitor + Supervisor) en Proxmox.
+# Alleen voor Stefan: dashboard alleen voor beheerders, weergave alleen voor deze gebruiker.
+# Meldingen: packages/server.yaml. Bereikbaarheid: Uptime Kuma (http://uptime-kuma.home).
+title: Server
+views:
+  - title: Server
+    path: server
+    icon: mdi:server
+    type: sections
+    max_columns: 3
+    visible:
+      - user: d50ef6680816427b8db92f5f48da876a # Stefan
+    badges:
+      - type: entity
+        entity: update.home_assistant_core_update
+        name: Home Assistant
+        show_name: true
+        state_content: [installed_version]
+      - type: entity
+        entity: sensor.home_assistant_operating_system_version
+        name: HAOS
+        show_name: true
+      - type: entity
+        entity: sensor.system_monitor_uptime
+        name: VM gestart
+        show_name: true
+    sections:
+      # ------------------------------------------------------- servers
+      # Overzicht van alles wat draait. Gegevens van de Proxmox VE-integratie (API-token
+      # homeassistant@pve!ha, alleen lezen); modem en Deco via de Ping-integratie.
+      # Geheugen van de HA-VM komt van System Monitor: Proxmox telt de cache van de VM mee
+      # en toont daardoor altijd ~100%.
+      # Kaart: www/server-overzicht-card.js (dashboard-bron /local/server-overzicht-card.js).
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:server-overzicht-card
+            titel: Servers
+            servers:
+              - naam: Proxmox
+                soort: Host · pve
+                icoon: mdi:server
+                status: sensor.pve_status
+                cpu: sensor.pve_cpu_usage
+                geheugen: sensor.pve_memory_usage_percentage
+                schijf: sensor.storage_local_storage_usage_percentage
+                sinds: sensor.pve_uptime
+                url: https://192.168.2.23
+              - naam: Home Assistant
+                soort: VM 100
+                icoon: mdi:home-assistant
+                status: sensor.homeassistant_status
+                cpu: sensor.homeassistant_cpu_usage
+                geheugen: sensor.system_monitor_memory_usage
+                schijf: sensor.system_monitor_disk_usage_config
+                sinds: sensor.system_monitor_uptime
+              - naam: Uptime Kuma
+                soort: LXC 101
+                icoon: mdi:heart-pulse
+                status: sensor.uptime_kuma_status
+                cpu: sensor.uptime_kuma_cpu_usage
+                geheugen: sensor.uptime_kuma_memory_usage_percentage
+                schijf_gebruikt: sensor.uptime_kuma_disk_usage
+                schijf_max: sensor.uptime_kuma_max_disk_usage
+                sinds: sensor.uptime_kuma_uptime
+                url: http://uptime-kuma.home
+              - naam: Playground
+                soort: LXC 102
+                icoon: mdi:flask-outline
+                status: sensor.playground_status
+                cpu: sensor.playground_cpu_usage
+                geheugen: sensor.playground_memory_usage_percentage
+                schijf_gebruikt: sensor.playground_disk_usage
+                schijf_max: sensor.playground_max_disk_usage
+                sinds: sensor.playground_uptime
+                url: http://192.168.2.230
+              - naam: KPN-modem
+                soort: 192.168.2.254
+                icoon: mdi:router-network
+                status: binary_sensor.server_kpn_modem
+                url: http://192.168.2.254
+              - naam: Deco (hal)
+                soort: 192.168.2.25
+                icoon: mdi:router-wireless
+                status: binary_sensor.server_deco
+
+      # ------------------------------------------------------ bewaking
+      # Monitors van Uptime Kuma (integratie uptime_kuma, LXC 101). Kaart in hetzelfde bestand.
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:uptime-overzicht-card
+            titel: Bewaking (Uptime Kuma)
+            url: http://uptime-kuma.home
+            monitors:
+              - naam: Thuis online
+                id: thuis_online_healthcecks_io
+                icoon: mdi:home-heart
+              - naam: Internet
+                id: internet
+                icoon: mdi:web
+              - naam: Home Assistant
+                id: home_assistance
+                icoon: mdi:home-assistant
+              - naam: Proxmox
+                id: proxmox
+                icoon: mdi:server
+              - naam: Deco
+                id: deco
+                icoon: mdi:router-wireless
+              - naam: Adchieve production
+                id: adchieve_production
+                icoon: mdi:briefcase-outline
+
+      # ---------------------------------------------------- proxmox-host
+      - type: grid
+        cards:
+          - type: heading
+            heading: Proxmox-host
+            icon: mdi:server
+            badges:
+              - type: entity
+                entity: sensor.pve_status
+          - type: gauge
+            entity: sensor.pve_cpu_usage
+            name: CPU
+            min: 0
+            max: 100
+            needle: true
+            severity: { green: 0, yellow: 70, red: 90 }
+          - type: gauge
+            entity: sensor.pve_memory_usage_percentage
+            name: Geheugen
+            min: 0
+            max: 100
+            needle: true
+            severity: { green: 0, yellow: 80, red: 90 }
+          - type: gauge
+            entity: sensor.storage_local_storage_usage_percentage
+            name: Systeem + back-ups
+            min: 0
+            max: 100
+            needle: true
+            severity: { green: 0, yellow: 70, red: 85 }
+          - type: gauge
+            entity: sensor.storage_local_lvm_storage_usage_percentage
+            name: VM-schijven
+            min: 0
+            max: 100
+            needle: true
+            severity: { green: 0, yellow: 70, red: 85 }
+          - type: tile
+            entity: binary_sensor.pve_backup_status
+            name: Laatste back-up
+            icon: mdi:backup-restore
+            state_content: [state]
+          - type: tile
+            entity: sensor.pve_last_backup
+            name: Back-up gemaakt
+            icon: mdi:calendar-clock
+          - type: tile
+            entity: sensor.storage_local_available_storage
+            name: Vrij (systeem)
+            icon: mdi:harddisk
+          - type: tile
+            entity: sensor.storage_local_lvm_available_storage
+            name: Vrij (VM's)
+            icon: mdi:harddisk-plus
+
+      # ----------------------------------------------- home assistant-vm
+      - type: grid
+        cards:
+          - type: heading
+            heading: Home Assistant-VM
+            icon: mdi:home-assistant
+          - type: gauge
+            entity: sensor.system_monitor_processor_use
+            name: CPU
+            min: 0
+            max: 100
+            needle: true
+            severity: { green: 0, yellow: 70, red: 90 }
+          - type: gauge
+            entity: sensor.system_monitor_memory_usage
+            name: Geheugen
+            min: 0
+            max: 100
+            needle: true
+            severity: { green: 0, yellow: 75, red: 90 }
+          - type: gauge
+            entity: sensor.system_monitor_disk_usage_config
+            name: Schijf
+            min: 0
+            max: 100
+            needle: true
+            severity: { green: 0, yellow: 70, red: 85 }
+          - type: tile
+            entity: sensor.system_monitor_load_5_min
+            name: Load (5 min)
+            icon: mdi:speedometer
+          - type: tile
+            entity: sensor.home_assistant_host_disk_used
+            name: Schijf gebruikt
+            icon: mdi:harddisk
+          - type: tile
+            entity: sensor.home_assistant_host_disk_free
+            name: Schijf vrij
+            icon: mdi:harddisk-plus
+          - type: tile
+            entity: sensor.system_monitor_swap_usage
+            name: Swap
+            icon: mdi:swap-horizontal
+
+      # ---------------------------------------------------------- add-ons
+      - type: grid
+        cards:
+          - type: heading
+            heading: Home Assistant en add-ons
+            icon: mdi:puzzle
+          - type: tile
+            entity: sensor.home_assistant_core_cpu_percent
+            name: Home Assistant CPU
+            icon: mdi:cpu-64-bit
+          - type: tile
+            entity: sensor.home_assistant_core_memory_percent
+            name: Home Assistant geheugen
+            icon: mdi:memory
+          - type: tile
+            entity: binary_sensor.go2rtc_running
+            name: go2rtc (deurbelbeeld)
+            icon: mdi:video
+          - type: tile
+            entity: binary_sensor.tailscale_running
+            name: Tailscale
+            icon: mdi:vpn
+          - type: tile
+            entity: update.home_assistant_core_update
+            name: Update Home Assistant
+          - type: tile
+            entity: update.home_assistant_operating_system_update
+            name: Update HAOS
+
+      # ---------------------------------------------------- grafieken
+      - type: grid
+        cards:
+          - type: heading
+            heading: Afgelopen 24 uur
+            icon: mdi:chart-line
+          - type: history-graph
+            hours_to_show: 24
+            grid_options:
+              columns: full
+            entities:
+              - entity: sensor.system_monitor_processor_use
+                name: CPU
+              - entity: sensor.system_monitor_memory_usage
+                name: Geheugen
+          - type: history-graph
+            hours_to_show: 24
+            grid_options:
+              columns: full
+            entities:
+              - entity: sensor.system_monitor_network_throughput_in_enp6s18
+                name: Netwerk binnen
+              - entity: sensor.system_monitor_network_throughput_out_enp6s18
+                name: Netwerk uit
+          - type: markdown
+            grid_options:
+              columns: full
+            content: >
+              Bereikbaarheid van Home Assistant, Proxmox en de Deco: zie
+              [Uptime Kuma](http://uptime-kuma.home). Proxmox zelf:
+              [webinterface](https://192.168.2.23).

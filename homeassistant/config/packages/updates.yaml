@@ -12,23 +12,26 @@ automation:
     triggers:
       - trigger: event
         event_type: state_changed
+    # Alleen een echte overgang (uit -> aan, of een nieuwere versie). Na een herstart of het
+    # herladen van een integratie komt de update-entiteit terug uit "unavailable"; dat negeren
+    # we, anders volgt na elke herstart een melding voor alle openstaande updates.
     conditions:
       - condition: template
         value_template: >
+          {% set oud = trigger.event.data.old_state %}
+          {% set nieuw = trigger.event.data.new_state %}
           {{ trigger.event.data.entity_id.startswith('update.')
-             and trigger.event.data.new_state is not none
-             and trigger.event.data.new_state.state == 'on'
-             and (trigger.event.data.old_state is none
-                  or trigger.event.data.old_state.state != 'on'
-                  or trigger.event.data.old_state.attributes.latest_version
-                     != trigger.event.data.new_state.attributes.latest_version) }}
+             and nieuw is not none and nieuw.state == 'on'
+             and oud is not none and oud.state not in ['unavailable', 'unknown']
+             and (oud.state != 'on'
+                  or oud.attributes.latest_version != nieuw.attributes.latest_version) }}
     actions:
-      - variables:
-          nieuw: "{{ trigger.event.data.new_state }}"
+      # Geen variabele voor de state: die wordt dan tekst en verliest zijn attributen.
       - action: notify.mobile_app_iphone_van_stefan
         data:
           title: "⬆️ Update beschikbaar"
           message: >
+            {% set nieuw = trigger.event.data.new_state %}
             {{ nieuw.attributes.title or nieuw.name }}:
             {{ nieuw.attributes.installed_version }} → {{ nieuw.attributes.latest_version }}
           data:

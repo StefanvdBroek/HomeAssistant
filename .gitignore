@@ -21,6 +21,7 @@ homeassistant/config/custom_components/*
 homeassistant/config/www/*
 !homeassistant/config/www/klantkaart-camera-card.js
 !homeassistant/config/www/airco-schema-card.js
+!homeassistant/config/www/server-overzicht-card.js
 
 # Mosquitto runtime-data
 mosquitto/data/*

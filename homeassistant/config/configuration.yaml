@@ -63,6 +63,13 @@ lovelace:
       show_in_sidebar: true
       require_admin: true # alleen beheerders; de weergave zelf alleen voor Stefan
       filename: dashboards/netwerk.yaml
+    dashboard-server:
+      mode: yaml
+      title: Server
+      icon: mdi:server
+      show_in_sidebar: true
+      require_admin: true # alleen beheerders; de weergave zelf alleen voor Stefan
+      filename: dashboards/server.yaml
     dashboard-aircos:
       mode: yaml
       title: Airco's

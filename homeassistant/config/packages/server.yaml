@@ -1,0 +1,152 @@
+# Server: gezondheid van de Home Assistant-VM (System Monitor + Supervisor) en Proxmox.
+# Of de servers bereikbaar zijn bewaakt Uptime Kuma (LXC 101, http://uptime-kuma.home); dat
+# werkt ook als Home Assistant zelf plat ligt. Hier gaat het om schijf, geheugen en CPU.
+# Dashboard: dashboards/server.yaml (alleen voor Stefan).
+
+automation:
+  # ------------------------------------------------- schijf bijna vol
+  - id: server_schijf_bijna_vol
+    alias: Server - melding als een schijf bijna vol is
+    mode: queued
+    triggers:
+      - trigger: numeric_state
+        entity_id:
+          - sensor.system_monitor_disk_usage_config # Home Assistant-VM
+          - sensor.storage_local_storage_usage_percentage # Proxmox: systeem + back-ups
+          - sensor.storage_local_lvm_storage_usage_percentage # Proxmox: VM-/LXC-schijven
+        above: 85
+        for: "00:10:00"
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "💾 Schijf bijna vol"
+          message: >
+            {{ trigger.to_state.name }} staat op {{ trigger.to_state.state | float | round(0) }}%.
+            Ruim back-ups of oude opnames op voordat Home Assistant vastloopt.
+          data:
+            tag: "server_schijf_{{ trigger.entity_id }}"
+            url: /dashboard-server/server
+
+  # ---------------------------------------- CPU of geheugen lang hoog
+  - id: server_belasting_hoog
+    alias: Server - melding bij langdurig hoge CPU of geheugen
+    mode: queued
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.system_monitor_processor_use
+        above: 90
+        for: "00:15:00"
+      - trigger: numeric_state
+        entity_id: sensor.system_monitor_memory_usage
+        above: 90
+        for: "00:15:00"
+      - trigger: numeric_state
+        entity_id:
+          - sensor.pve_cpu_usage
+          - sensor.pve_memory_usage_percentage
+        above: 90
+        for: "00:15:00"
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: >
+            🔥 {{ 'Proxmox' if trigger.entity_id.startswith('sensor.pve_') else 'Home Assistant' }}
+            zwaar belast
+          message: >
+            {{ trigger.to_state.name }} staat al 15 minuten boven 90%
+            ({{ trigger.to_state.state | float | round(0) }}%). Kijk op het dashboard Server
+            welke add-on of integratie het veroorzaakt.
+          data:
+            tag: "server_belasting_{{ trigger.entity_id }}"
+            url: /dashboard-server/server
+
+  # ---------------------------------------------------- add-on gestopt
+  - id: server_addon_gestopt
+    alias: Server - melding als een add-on gestopt is
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.go2rtc_running
+          - binary_sensor.tailscale_running
+        from: "on"
+        to: "off"
+        for: "00:05:00"
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🧩 Add-on gestopt"
+          message: >
+            {{ trigger.to_state.name | replace(' Running', '') | replace(' running', '') }}
+            draait al 5 minuten niet meer.
+          data:
+            tag: "server_addon_{{ trigger.entity_id }}"
+            url: /dashboard-server/server
+
+  # -------------------------------------------- LXC-container gestopt
+  # Uptime Kuma en Playground draaien naast Home Assistant op Proxmox. Ligt Proxmox zelf
+  # plat, dan ligt Home Assistant ook plat: dat meldt Uptime Kuma/healthchecks.io.
+  - id: server_container_gestopt
+    alias: Server - melding als een container op Proxmox niet meer draait
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id:
+          - sensor.uptime_kuma_status
+          - sensor.playground_status
+        from: running
+        for: "00:05:00"
+      - trigger: state
+        entity_id:
+          - sensor.uptime_kuma_status
+          - sensor.playground_status
+        to: running
+        id: terug
+    conditions:
+      - condition: template # "terug" alleen na een melding over uitval
+        value_template: >
+          {{ trigger.id != 'terug'
+             or (trigger.from_state.state not in ['unknown', 'unavailable']
+                 and (now() - trigger.from_state.last_changed).total_seconds() > 300) }}
+    actions:
+      - variables:
+          naam: >
+            {{ {'sensor.uptime_kuma_status': 'Uptime Kuma (LXC 101)',
+                'sensor.playground_status': 'Playground (LXC 102)'}[trigger.entity_id] }}
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "{{ '✅ ' ~ naam ~ ' draait weer' if trigger.id == 'terug' else '🧊 ' ~ naam ~ ' is gestopt' }}"
+          message: >
+            {% if trigger.id == 'terug' %}De container draait weer.{% else %}Status in Proxmox:
+            {{ trigger.to_state.state }}. Start hem in Proxmox of kijk in de log van de
+            container.{% endif %}
+          data:
+            tag: "server_container_{{ trigger.entity_id }}"
+            url: /dashboard-server/server
+
+  # ---------------------------------------------- VM opnieuw opgestart
+  # De opstarttijd van System Monitor verandert alleen als de VM zelf herstart (niet bij een
+  # herstart van alleen Home Assistant). Bijvoorbeeld na een stroomstoring of een HAOS-update.
+  - id: server_vm_herstart
+    alias: Server - melding als de Home Assistant-VM opnieuw is opgestart
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: sensor.system_monitor_uptime
+    conditions:
+      - condition: template
+        value_template: >
+          {{ trigger.from_state is not none
+             and trigger.from_state.state not in ['unknown', 'unavailable']
+             and trigger.to_state.state not in ['unknown', 'unavailable']
+             and (as_datetime(trigger.to_state.state)
+                  - as_datetime(trigger.from_state.state)).total_seconds() > 300 }}
+    actions:
+      - action: notify.mobile_app_iphone_van_stefan
+        data:
+          title: "🔄 Home Assistant-VM is opnieuw opgestart"
+          message: >
+            Opgestart om {{ as_local(as_datetime(trigger.to_state.state)).strftime('%H:%M') }}.
+            Was dit geen update of herstart van jou, kijk dan in Proxmox wat er gebeurde.
+          data:
+            url: /dashboard-server/server
