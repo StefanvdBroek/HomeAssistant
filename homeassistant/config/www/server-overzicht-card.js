@@ -147,6 +147,8 @@ class ServerOverzichtCard extends InklapKaart {
   _teken() {
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
     const st = this._hass.states;
+    const heeftCijfers = (s) => s.cpu || s.geheugen || s.schijf || s.schijf_gebruikt;
+    const metCijfers = this._config.servers.some(heeftCijfers); // anders: alleen status (bijv. netwerk)
     const rijen = this._config.servers.map((s, i) => {
       const status = st[s.status];
       const toestand = status ? status.state : "unavailable";
@@ -166,7 +168,7 @@ class ServerOverzichtCard extends InklapKaart {
             ${s.url ? `<a class="open" href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="Open ${esc(s.naam)}"><ha-icon icon="mdi:open-in-new"></ha-icon></a>` : ""}
           </div>
           <div class="status"><span class="pil ${ok ? "ok" : "nok"}"><span class="bol"></span>${esc(STATUS[toestand] || toestand)}</span></div>
-          ${s.cpu || s.geheugen || s.schijf || s.schijf_gebruikt ? `
+          ${!metCijfers ? "" : heeftCijfers(s) ? `
           <div class="meters">
             ${this._balk("cpu", s.cpu ? getal(st[s.cpu]) : null)}
             ${this._balk("geheugen", s.geheugen ? getal(st[s.geheugen]) : null)}
@@ -183,8 +185,10 @@ class ServerOverzichtCard extends InklapKaart {
         ${this._kop(esc(this._config.titel || "Servers"), "",
           `<span class="samen ${aantalOk === this._config.servers.length ? "ok" : "nok"}">${aantalOk} van ${this._config.servers.length} in orde</span>`)}
         ${this._ingeklapt ? "" : `
-        <div class="tabel">
-          <div class="rij kopregel"><div>Server</div><div>Status</div><div class="meters"><span>CPU</span><span>Geheugen</span><span>Schijf</span></div><div class="sinds">Aan sinds</div></div>
+        <div class="tabel ${metCijfers ? "" : "zonder"}">
+          <div class="rij kopregel"><div>${esc(this._config.kolom || "Server")}</div><div>Status</div>${metCijfers
+            ? `<div class="meters"><span>CPU</span><span>Geheugen</span><span>Schijf</span></div><div class="sinds">Aan sinds</div>`
+            : `<div class="sinds">In deze status sinds</div>`}</div>
           ${rijen}
         </div>`}
       </ha-card>`;
@@ -254,6 +258,7 @@ const STIJL = `
   .sinds { font-size: 13px; text-align: right; color: var(--primary-text-color); white-space: nowrap; }
   .sinds .kl { display: none; color: var(--secondary-text-color); }
 
+  .zonder .rij { grid-template-columns: minmax(170px, 1fr) 110px 160px; }
   /* Smal (telefoon): per server een blok; naam + status boven, balkjes eronder */
   @container (max-width: 640px) {
     .kopregel { display: none; }
@@ -268,6 +273,7 @@ const STIJL = `
     .meter .pct { grid-area: pct; font-size: 12px; }
     .meter .spoor { grid-area: spoor; }
     .meter.leeg { grid-template-areas: "lbl pct"; }
+    .zonder .rij { grid-template-columns: 1fr auto; grid-template-areas: "naam status" "sinds sinds"; }
   }
 `;
 
@@ -535,6 +541,62 @@ const STIJL_PC = `
   .stip.vrij { background: var(--divider-color, rgba(127,127,127,.3)); }
 `;
 
+// ---------------------------------------------------------------------------------------------
+// Kaart "Inklapkop": een kop in dezelfde stijl als de kaarten hierboven, voor een groep gewone
+// Home Assistant-secties. De stand staat in een input_boolean (aan = open); geef de secties die
+// erbij horen 'visibility' op die input_boolean. Het label rechts telt hoeveel 'status'-entiteiten
+// in orde zijn (ook zichtbaar als hij dicht is).
+//
+//   type: custom:inklap-kop-card
+//   titel: Grafieken per server
+//   schakelaar: input_boolean.server_grafieken_tonen
+//   status: [sensor.pve_status, sensor.homeassistant_status]
+
+class InklapKopCard extends HTMLElement {
+  setConfig(config) {
+    if (!config.schakelaar) throw new Error("Geef 'schakelaar' op (een input_boolean)");
+    this._config = { ...config, status: [].concat(config.status || []) };
+    this._sleutel = null;
+    if (this._hass) this.hass = this._hass;
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    if (!this._config) return;
+    const sleutel = JSON.stringify([this._config.schakelaar, ...this._config.status].map((i) => hass.states[i]?.state));
+    if (sleutel === this._sleutel) return;
+    this._sleutel = sleutel;
+    this._teken();
+  }
+
+  _teken() {
+    if (!this.shadowRoot) this.attachShadow({ mode: "open" });
+    const st = this._hass.states;
+    const open = st[this._config.schakelaar]?.state === "on";
+    const n = this._config.status.length;
+    const ok = this._config.status.filter((i) => OK.includes(st[i]?.state)).length;
+    this.shadowRoot.innerHTML = `
+      <style>${STIJL}</style>
+      <ha-card class="ingeklapt">
+        <div class="kop klikbaar" role="button" tabindex="0" aria-expanded="${open}" title="${open ? "Inklappen" : "Uitklappen"}">
+          <span class="titel-kaart"><ha-icon class="pijl ${open ? "" : "dicht"}" icon="mdi:chevron-down"></ha-icon>${esc(this._config.titel || "Meer")}</span>
+          ${n ? `<span class="samen ${ok === n ? "ok" : "nok"}">${ok} van ${n} online</span>` : ""}
+        </div>
+      </ha-card>`;
+    const kop = this.shadowRoot.querySelector(".kop");
+    const wissel = () => {
+      const [domein] = this._config.schakelaar.split(".");
+      this._hass.callService(domein, "toggle", { entity_id: this._config.schakelaar });
+    };
+    kop.addEventListener("click", wissel);
+    kop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); wissel(); } });
+  }
+
+  getCardSize() { return 1; }
+  getGridOptions() { return { columns: "full", rows: "auto" }; }
+}
+
+customElements.define("inklap-kop-card", InklapKopCard);
 customElements.define("server-overzicht-card", ServerOverzichtCard);
 customElements.define("pc-totaal-card", PcTotaalCard);
 customElements.define("uptime-overzicht-card", UptimeOverzichtCard);

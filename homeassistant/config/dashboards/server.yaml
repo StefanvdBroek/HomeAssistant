@@ -27,7 +27,7 @@ views:
     sections:
       # ------------------------------------------------------- servers
       # Overzicht van alles wat draait. Gegevens van de Proxmox VE-integratie (API-token
-      # homeassistant@pve!ha, alleen lezen); modem en Deco via de Ping-integratie.
+      # homeassistant@pve!ha, alleen lezen). Modem en Deco staan in het blok Netwerk.
       # Geheugen van de HA-VM komt van System Monitor: Proxmox telt de cache van de VM mee
       # en toont daardoor altijd ~100%.
       # Kaart: www/server-overzicht-card.js (dashboard-bron /local/server-overzicht-card.js).
@@ -74,6 +74,17 @@ views:
                 schijf_max: sensor.playground_max_disk_usage
                 sinds: sensor.playground_uptime
                 url: http://192.168.2.230
+
+      # -------------------------------------------------------- netwerk
+      # Netwerkapparaten: alleen bereikbaarheid (Ping-integratie, elke 30 s). Zelfde kaart als
+      # Servers; zonder CPU/geheugen/schijf toont hij alleen status en sinds wanneer.
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:server-overzicht-card
+            titel: Netwerk
+            kolom: Apparaat
+            servers:
               - naam: KPN-modem
                 soort: 192.168.2.254
                 icoon: mdi:router-network
@@ -153,54 +164,21 @@ views:
       - type: grid
         column_span: 3
         cards:
-          - type: heading
-            heading: Grafieken per server
-            icon: mdi:chevron-down
-            heading_style: title
-            tap_action: &grafieken_wissel
-              action: perform-action
-              perform_action: input_boolean.toggle
-              target:
-                entity_id: input_boolean.server_grafieken_tonen
-            visibility: &grafieken_open
-              - condition: state
-                entity: input_boolean.server_grafieken_tonen
-                state: "on"
-          - type: heading
-            heading: Grafieken per server
-            icon: mdi:chevron-right
-            heading_style: title
-            tap_action: *grafieken_wissel
-            badges:
-              - type: entity
-                entity: sensor.pve_status
-                name: Proxmox
-                show_name: true
-              - type: entity
-                entity: sensor.homeassistant_status
-                name: Home Assistant
-                show_name: true
-              - type: entity
-                entity: sensor.uptime_kuma_status
-                name: Uptime Kuma
-                show_name: true
-              - type: entity
-                entity: sensor.playground_status
-                name: Playground
-                show_name: true
-            visibility:
-              - condition: state
-                entity: input_boolean.server_grafieken_tonen
-                state_not: "on"
-
-      # Elke server met grafieken volgt hetzelfde sjabloon (zelfde volgorde, namen en grenzen als
-      # de balkjes in de kaart Servers): kop "Naam · soort" met status, meters CPU/Geheugen/Schijf,
-      # tegels Aan sinds/Schijf vrij/Laatste back-up, grafiek CPU + geheugen (24 uur).
-      # Grenzen: CPU 70/90 %, geheugen 80/90 %, schijf 70/85 % (oranje/rood).
+          - type: custom:inklap-kop-card
+            titel: Grafieken per server
+            schakelaar: input_boolean.server_grafieken_tonen
+            status:
+              - sensor.pve_status
+              - sensor.homeassistant_status
+              - sensor.uptime_kuma_status
+              - sensor.playground_status
 
       # ------------------------------------------------------ proxmox
       - type: grid
-        visibility: *grafieken_open
+        visibility: &grafieken_open
+          - condition: state
+            entity: input_boolean.server_grafieken_tonen
+            state: "on"
         cards:
           - type: heading
             heading: Proxmox · Host
