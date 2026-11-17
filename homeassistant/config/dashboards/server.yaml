@@ -84,6 +84,41 @@ views:
                 icoon: mdi:router-wireless
                 status: binary_sensor.server_deco
 
+      # ------------------------------------------------- mini-pc totaal
+      # De hele pc (Proxmox-host): per gast wat hij van de host gebruikt; de rest is Proxmox zelf.
+      # Geheugen zoals de host het ziet (incl. cache van de VM), schijf = beide opslagen op de SSD.
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:pc-totaal-card
+            titel: Mini-pc totaal
+            host:
+              naam: Proxmox zelf
+              cpu: sensor.pve_cpu_usage
+              kernen: sensor.pve_max_cpu
+              geheugen: sensor.pve_memory_usage
+              geheugen_totaal: sensor.pve_max_memory_usage
+              schijf: sensor.storage_local_used_storage
+              schijf_totaal:
+                - sensor.storage_local_total_storage
+                - sensor.storage_local_lvm_total_storage
+            gasten:
+              - naam: Home Assistant
+                cpu: sensor.homeassistant_cpu_usage
+                kernen: sensor.homeassistant_max_cpu
+                geheugen: sensor.homeassistant_memory_usage
+                schijf: sensor.home_assistant_schijf_op_host
+              - naam: Uptime Kuma
+                cpu: sensor.uptime_kuma_cpu_usage
+                kernen: sensor.uptime_kuma_max_cpu
+                geheugen: sensor.uptime_kuma_memory_usage
+                schijf: sensor.uptime_kuma_disk_usage
+              - naam: Playground
+                cpu: sensor.playground_cpu_usage
+                kernen: sensor.playground_max_cpu
+                geheugen: sensor.playground_memory_usage
+                schijf: sensor.playground_disk_usage
+
       # ------------------------------------------------------ bewaking
       # Monitors van Uptime Kuma (integratie uptime_kuma, LXC 101). Kaart in hetzelfde bestand.
       - type: grid

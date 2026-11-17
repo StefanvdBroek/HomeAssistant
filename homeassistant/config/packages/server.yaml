@@ -207,3 +207,16 @@ template:
         unique_id: server_playground_laatste_backup
         icon: mdi:backup-restore
         state: Geen back-up
+      # Ruimte die de schijf van de Home Assistant-VM op de SSD inneemt: de VM-/LXC-opslag
+      # (local-lvm, thin) min de LXC's. Proxmox kan niet in een VM kijken; dit is wat de host ziet.
+      - name: Home Assistant schijf op host
+        unique_id: server_home_assistant_schijf_op_host
+        icon: mdi:harddisk
+        unit_of_measurement: GiB
+        device_class: data_size
+        state_class: measurement
+        state: >
+          {{ [0, states('sensor.storage_local_lvm_used_storage') | float
+                 - states('sensor.uptime_kuma_disk_usage') | float(0)
+                 - states('sensor.playground_disk_usage') | float(0)] | max | round(1) }}
+        availability: "{{ states('sensor.storage_local_lvm_used_storage') | is_number }}"

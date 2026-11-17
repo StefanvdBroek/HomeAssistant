@@ -395,10 +395,153 @@ const STIJL_BEWAKING = `
   }
 `;
 
+// ---------------------------------------------------------------------------------------------
+// Kaart "Mini-pc totaal": CPU, geheugen en schijf van de hele pc (de Proxmox-host) als gestapelde
+// balk, met per gast hoeveel hij gebruikt. Wat overblijft van het hostgebruik is "Proxmox zelf".
+//
+//   type: custom:pc-totaal-card
+//   titel: Mini-pc totaal
+//   host:
+//     naam: Proxmox zelf                  # het restdeel van het gebruik
+//     cpu: sensor.pve_cpu_usage           # % van alle cores
+//     kernen: sensor.pve_max_cpu
+//     geheugen: sensor.pve_memory_usage   # GiB in gebruik
+//     geheugen_totaal: sensor.pve_max_memory_usage
+//     schijf: sensor.storage_local_used_storage      # GiB van de host zelf (systeem + back-ups)
+//     schijf_totaal: [sensor.storage_local_total_storage, sensor.storage_local_lvm_total_storage]
+//   gasten:
+//     - naam: Home Assistant
+//       cpu: sensor.homeassistant_cpu_usage   # % van de eigen cores
+//       kernen: sensor.homeassistant_max_cpu
+//       geheugen: sensor.homeassistant_memory_usage   # GiB
+//       schijf: sensor.home_assistant_schijf_op_host  # GiB
+
+const KLEUREN = ["#4c8bf5", "#9c6ade", "#f0a030", "#26a69a", "#ec6a8c", "#7cb342"];
+const HOST_KLEUR = "#8d96a0";
+const nl = (v, d = 1) => v.toLocaleString("nl-NL", { minimumFractionDigits: d, maximumFractionDigits: d });
+
+class PcTotaalCard extends InklapKaart {
+  setConfig(config) {
+    if (!config.host || !config.host.cpu || !config.host.geheugen || !config.host.geheugen_totaal)
+      throw new Error("Geef 'host' op met minstens cpu, geheugen en geheugen_totaal");
+    this._config = { ...config, gasten: config.gasten || [] };
+    this._sleutel = null;
+    if (this._hass) this.hass = this._hass;
+  }
+
+  _ids() {
+    const h = this._config.host;
+    const totaal = [].concat(h.schijf_totaal || []);
+    return [h.cpu, h.kernen, h.geheugen, h.geheugen_totaal, h.schijf, ...totaal,
+      ...this._config.gasten.flatMap((g) => [g.cpu, g.kernen, g.geheugen, g.schijf])].filter(Boolean);
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    if (!this._config) return;
+    const sleutel = JSON.stringify(this._ids().map((i) => hass.states[i]?.state));
+    this._laadProfiel();
+    if (sleutel === this._sleutel) return;
+    this._sleutel = sleutel;
+    this._teken();
+  }
+
+  _v(id) { return id ? getal(this._hass.states[id]) : null; }
+
+  // Eén regel: titel + totaal, gestapelde balk, legenda. delen: [{naam, waarde, kleur}] in dezelfde eenheid als totaal.
+  _regel(titel, samenvatting, delen, totaal, eenheid, d) {
+    if (!totaal) return `<div class="pc-regel"><div class="pc-kop"><span class="pc-titel">${titel}</span><span class="pc-som">–</span></div></div>`;
+    const gebruikt = delen.reduce((a, x) => a + x.waarde, 0);
+    const vrij = Math.max(0, totaal - gebruikt);
+    const pct = (x) => Math.max(0, (x / totaal) * 100);
+    const zw = gebruikt / totaal * 100;
+    const kleurTotaal = zw >= 90 ? "nok-t" : zw >= 75 ? "oranje-t" : "";
+    return `
+      <div class="pc-regel">
+        <div class="pc-kop"><span class="pc-titel">${titel}</span><span class="pc-som"><b class="${kleurTotaal}">${Math.round(zw)}%</b> ${samenvatting}</span></div>
+        <div class="stapel" role="img" aria-label="${titel}: ${Math.round(zw)}% in gebruik">
+          ${delen.filter((x) => x.waarde > 0).map((x) =>
+            `<div class="deel" style="width:${pct(x.waarde)}%;background:${x.kleur}" title="${esc(x.naam)}: ${nl(x.waarde, d)} ${eenheid}"></div>`).join("")}
+        </div>
+        <div class="legenda">
+          ${delen.map((x) => `<span class="lg"><span class="stip" style="background:${x.kleur}"></span>${esc(x.naam)} <b>${nl(x.waarde, d)} ${eenheid}</b></span>`).join("")}
+          <span class="lg"><span class="stip vrij"></span>Vrij <b>${nl(vrij, d)} ${eenheid}</b></span>
+        </div>
+      </div>`;
+  }
+
+  _teken() {
+    if (!this.shadowRoot) this.attachShadow({ mode: "open" });
+    const h = this._config.host;
+    const gasten = this._config.gasten.map((g, i) => ({ ...g, kleur: g.kleur || KLEUREN[i % KLEUREN.length] }));
+    const hostNaam = h.naam || "Proxmox zelf";
+
+    // CPU in "cores bezet": gast-% × eigen cores; host-% × alle cores. Rest = host zelf.
+    const kernen = this._v(h.kernen) || 1;
+    const cpuDelen = gasten.map((g) => ({ naam: g.naam, kleur: g.kleur,
+      waarde: ((this._v(g.cpu) || 0) / 100) * (this._v(g.kernen) || 1) }));
+    const cpuHost = ((this._v(h.cpu) || 0) / 100) * kernen;
+    cpuDelen.push({ naam: hostNaam, kleur: HOST_KLEUR, waarde: Math.max(0, cpuHost - cpuDelen.reduce((a, x) => a + x.waarde, 0)) });
+
+    const memDelen = gasten.map((g) => ({ naam: g.naam, kleur: g.kleur, waarde: this._v(g.geheugen) || 0 }));
+    const memHost = this._v(h.geheugen) || 0;
+    memDelen.push({ naam: hostNaam, kleur: HOST_KLEUR, waarde: Math.max(0, memHost - memDelen.reduce((a, x) => a + x.waarde, 0)) });
+    const memTotaal = this._v(h.geheugen_totaal);
+
+    const schijfTotaal = [].concat(h.schijf_totaal || []).reduce((a, id) => a + (this._v(id) || 0), 0);
+    const schijfDelen = gasten.filter((g) => g.schijf).map((g) => ({ naam: g.naam, kleur: g.kleur, waarde: this._v(g.schijf) || 0 }));
+    if (h.schijf) schijfDelen.push({ naam: `${hostNaam} + back-ups`, kleur: HOST_KLEUR, waarde: this._v(h.schijf) || 0 });
+
+    // Samenvatting voor de kop (ook zichtbaar als de kaart is ingeklapt).
+    const memPct = memTotaal ? (memHost / memTotaal) * 100 : 0;
+    const schijfGebruikt = schijfDelen.reduce((a, x) => a + x.waarde, 0);
+    const schijfPct = schijfTotaal ? (schijfGebruikt / schijfTotaal) * 100 : 0;
+    const cpuPct = this._v(h.cpu) || 0;
+    const zwaar = Math.max(cpuPct, memPct, schijfPct);
+    const samen = `<span class="samen ${zwaar >= 90 ? "nok" : "ok"}">CPU ${Math.round(cpuPct)}% · RAM ${Math.round(memPct)}% · schijf ${Math.round(schijfPct)}%</span>`;
+
+    this.shadowRoot.innerHTML = `
+      <style>${STIJL}${STIJL_BEWAKING}${STIJL_PC}</style>
+      <ha-card class="${this._ingeklapt ? "ingeklapt" : ""}">
+        ${this._kop(esc(this._config.titel || "Mini-pc totaal"), "", samen)}
+        ${this._ingeklapt ? "" : `
+        <div class="pc">
+          ${this._regel("CPU", `van ${kernen} cores`,
+            cpuDelen.map((x) => ({ ...x, waarde: (x.waarde / kernen) * 100 })), 100, "%", 1)}
+          ${this._regel("Geheugen", memTotaal ? `van ${nl(memTotaal)} GiB` : "", memDelen, memTotaal, "GiB", 1)}
+          ${this._regel("Schijf", schijfTotaal ? `van ${nl(schijfTotaal, 0)} GiB` : "", schijfDelen, schijfTotaal, "GiB", 1)}
+        </div>`}
+      </ha-card>`;
+    this._koppelKop();
+  }
+
+  getCardSize() { return 6; }
+  getGridOptions() { return { columns: "full", rows: "auto" }; }
+}
+
+const STIJL_PC = `
+  .pc { display: grid; gap: 18px; padding: 4px 0 8px; }
+  .pc-kop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .pc-titel { font-weight: 600; font-size: 15px; }
+  .pc-som { font-size: 13px; color: var(--secondary-text-color); white-space: nowrap; }
+  .pc-som b { color: var(--primary-text-color); font-size: 15px; margin-right: 2px; }
+  .stapel { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--divider-color, rgba(127,127,127,.2)); }
+  .deel { height: 100%; min-width: 2px; }
+  .deel + .deel { box-shadow: inset 2px 0 0 var(--card-background-color, #fff); }
+  .legenda { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: 13px; color: var(--secondary-text-color); }
+  .legenda b { color: var(--primary-text-color); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .lg { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .stip { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .stip.vrij { background: var(--divider-color, rgba(127,127,127,.3)); }
+`;
+
 customElements.define("server-overzicht-card", ServerOverzichtCard);
+customElements.define("pc-totaal-card", PcTotaalCard);
 customElements.define("uptime-overzicht-card", UptimeOverzichtCard);
 window.customCards = window.customCards || [];
 window.customCards.push({ type: "server-overzicht-card", name: "Server-overzicht",
   description: "Status, CPU, geheugen, schijf en uptime van je servers in één tabel." });
+window.customCards.push({ type: "pc-totaal-card", name: "Mini-pc totaal",
+  description: "CPU, geheugen en schijf van de hele pc, met per server hoeveel hij gebruikt." });
 window.customCards.push({ type: "uptime-overzicht-card", name: "Bewaking (Uptime Kuma)",
   description: "Monitors van Uptime Kuma: status, reactietijd, uptime en certificaat." });
