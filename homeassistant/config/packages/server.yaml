@@ -3,6 +3,13 @@
 # werkt ook als Home Assistant zelf plat ligt. Hier gaat het om schijf, geheugen en CPU.
 # Dashboard: dashboards/server.yaml (alleen voor Stefan).
 
+input_boolean:
+  # Inklappen van het blok "Grafieken per server" op het dashboard Server (tik op de kop).
+  # Home Assistant onthoudt de stand, ook na een herstart.
+  server_grafieken_tonen:
+    name: Servergrafieken tonen
+    icon: mdi:chart-box-outline
+
 automation:
   # ------------------------------------------------- schijf bijna vol
   - id: server_schijf_bijna_vol

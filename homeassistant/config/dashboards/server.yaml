@@ -148,6 +148,51 @@ views:
                 icoon: mdi:briefcase-outline
 
       # ------------------------------------------------- per server
+      # Inklapbaar: tik op de kop. De stand staat in input_boolean.server_grafieken_tonen
+      # (packages/server.yaml); de serverblokken hieronder zijn alleen zichtbaar als die aan staat.
+      - type: grid
+        column_span: 3
+        cards:
+          - type: heading
+            heading: Grafieken per server
+            icon: mdi:chevron-down
+            heading_style: title
+            tap_action: &grafieken_wissel
+              action: perform-action
+              perform_action: input_boolean.toggle
+              target:
+                entity_id: input_boolean.server_grafieken_tonen
+            visibility: &grafieken_open
+              - condition: state
+                entity: input_boolean.server_grafieken_tonen
+                state: "on"
+          - type: heading
+            heading: Grafieken per server
+            icon: mdi:chevron-right
+            heading_style: title
+            tap_action: *grafieken_wissel
+            badges:
+              - type: entity
+                entity: sensor.pve_status
+                name: Proxmox
+                show_name: true
+              - type: entity
+                entity: sensor.homeassistant_status
+                name: Home Assistant
+                show_name: true
+              - type: entity
+                entity: sensor.uptime_kuma_status
+                name: Uptime Kuma
+                show_name: true
+              - type: entity
+                entity: sensor.playground_status
+                name: Playground
+                show_name: true
+            visibility:
+              - condition: state
+                entity: input_boolean.server_grafieken_tonen
+                state_not: "on"
+
       # Elke server met grafieken volgt hetzelfde sjabloon (zelfde volgorde, namen en grenzen als
       # de balkjes in de kaart Servers): kop "Naam · soort" met status, meters CPU/Geheugen/Schijf,
       # tegels Aan sinds/Schijf vrij/Laatste back-up, grafiek CPU + geheugen (24 uur).
@@ -155,6 +200,7 @@ views:
 
       # ------------------------------------------------------ proxmox
       - type: grid
+        visibility: *grafieken_open
         cards:
           - type: heading
             heading: Proxmox · Host
@@ -223,6 +269,7 @@ views:
       # ----------------------------------------------- home assistant
       # Geheugen en schijf via System Monitor (binnen de VM): Proxmox telt de cache van de VM mee.
       - type: grid
+        visibility: *grafieken_open
         cards:
           - type: heading
             heading: Home Assistant · VM 100
@@ -253,6 +300,7 @@ views:
       # LXC: Proxmox ziet hier alles van binnenuit (CPU, geheugen, schijf). Schijf-% en vrij via
       # template-sensoren in packages/server.yaml. Zit in de wekelijkse Proxmox-back-up.
       - type: grid
+        visibility: *grafieken_open
         cards:
           - type: heading
             heading: Uptime Kuma · LXC 101
@@ -282,6 +330,7 @@ views:
       # --------------------------------------------------- playground
       # LXC 102 (PlaygroundAdmin). Zit niet in de wekelijkse back-up: de tegel toont dat.
       - type: grid
+        visibility: *grafieken_open
         cards:
           - type: heading
             heading: Playground · LXC 102
