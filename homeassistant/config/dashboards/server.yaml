@@ -84,14 +84,14 @@ views:
                 icoon: mdi:router-wireless
                 status: binary_sensor.server_deco
 
-      # ------------------------------------------------- mini-pc totaal
+      # ----------------------------------------------------- server one
       # De hele pc (Proxmox-host): per gast wat hij van de host gebruikt; de rest is Proxmox zelf.
       # Geheugen zoals de host het ziet (incl. cache van de VM), schijf = beide opslagen op de SSD.
       - type: grid
         column_span: 3
         cards:
           - type: custom:pc-totaal-card
-            titel: Mini-pc totaal
+            titel: Server One
             host:
               naam: Proxmox zelf
               cpu: sensor.pve_cpu_usage
