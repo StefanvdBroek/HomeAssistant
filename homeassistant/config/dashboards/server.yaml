@@ -38,7 +38,7 @@ views:
             titel: Servers
             servers:
               - naam: Proxmox
-                soort: Host · pve
+                soort: Host
                 icoon: mdi:server
                 status: sensor.pve_status
                 cpu: sensor.pve_cpu_usage
@@ -112,119 +112,114 @@ views:
                 id: adchieve_production
                 icoon: mdi:briefcase-outline
 
-      # ---------------------------------------------------- proxmox-host
+      # ------------------------------------------------- per server
+      # Elke server met grafieken volgt hetzelfde sjabloon (zelfde volgorde, namen en grenzen als
+      # de balkjes in de kaart Servers): kop "Naam · soort" met status, meters CPU/Geheugen/Schijf,
+      # tegels Aan sinds/Schijf vrij/Laatste back-up, grafiek CPU + geheugen (24 uur).
+      # Grenzen: CPU 70/90 %, geheugen 80/90 %, schijf 70/85 % (oranje/rood).
+
+      # ------------------------------------------------------ proxmox
       - type: grid
         cards:
           - type: heading
-            heading: Proxmox-host
+            heading: Proxmox · Host
             icon: mdi:server
             badges:
               - type: entity
                 entity: sensor.pve_status
-          - type: gauge
+          - &meter_cpu
+            type: gauge
             entity: sensor.pve_cpu_usage
             name: CPU
             min: 0
             max: 100
             needle: true
             severity: { green: 0, yellow: 70, red: 90 }
-          - type: gauge
+            grid_options: { columns: 4 }
+          - &meter_geheugen
+            type: gauge
             entity: sensor.pve_memory_usage_percentage
             name: Geheugen
             min: 0
             max: 100
             needle: true
             severity: { green: 0, yellow: 80, red: 90 }
-          - type: gauge
-            entity: sensor.storage_local_storage_usage_percentage
-            name: Systeem + back-ups
-            min: 0
-            max: 100
-            needle: true
-            severity: { green: 0, yellow: 70, red: 85 }
-          - type: gauge
-            entity: sensor.storage_local_lvm_storage_usage_percentage
-            name: VM-schijven
-            min: 0
-            max: 100
-            needle: true
-            severity: { green: 0, yellow: 70, red: 85 }
-          - type: tile
-            entity: binary_sensor.pve_backup_status
-            name: Laatste back-up
-            icon: mdi:backup-restore
-            state_content: [state]
-          - type: tile
-            entity: sensor.pve_last_backup
-            name: Back-up gemaakt
-            icon: mdi:calendar-clock
-          - type: tile
-            entity: sensor.storage_local_available_storage
-            name: Vrij (systeem)
-            icon: mdi:harddisk
-          - type: tile
-            entity: sensor.storage_local_lvm_available_storage
-            name: Vrij (VM's)
-            icon: mdi:harddisk-plus
-
-      # ----------------------------------------------- home assistant-vm
-      - type: grid
-        cards:
-          - type: heading
-            heading: Home Assistant-VM
-            icon: mdi:home-assistant
-          - type: gauge
-            entity: sensor.system_monitor_processor_use
-            name: CPU
-            min: 0
-            max: 100
-            needle: true
-            severity: { green: 0, yellow: 70, red: 90 }
-          - type: gauge
-            entity: sensor.system_monitor_memory_usage
-            name: Geheugen
-            min: 0
-            max: 100
-            needle: true
-            severity: { green: 0, yellow: 75, red: 90 }
-          - type: gauge
-            entity: sensor.system_monitor_disk_usage_config
+            grid_options: { columns: 4 }
+          - &meter_schijf
+            type: gauge
+            entity: sensor.storage_local_storage_usage_percentage # systeem + back-ups (local)
             name: Schijf
             min: 0
             max: 100
             needle: true
             severity: { green: 0, yellow: 70, red: 85 }
-          - type: tile
-            entity: sensor.system_monitor_load_5_min
-            name: Load (5 min)
-            icon: mdi:speedometer
-          - type: tile
-            entity: sensor.home_assistant_host_disk_used
-            name: Schijf gebruikt
-            icon: mdi:harddisk
-          - type: tile
-            entity: sensor.home_assistant_host_disk_free
+            grid_options: { columns: 4 }
+          - &tegel_sinds
+            type: tile
+            entity: sensor.pve_uptime
+            name: Aan sinds
+            icon: mdi:power
+            vertical: true
+            grid_options: { columns: 4 }
+          - &tegel_vrij
+            type: tile
+            entity: sensor.storage_local_available_storage
             name: Schijf vrij
-            icon: mdi:harddisk-plus
-          - type: tile
-            entity: sensor.system_monitor_swap_usage
-            name: Swap
-            icon: mdi:swap-horizontal
+            icon: mdi:harddisk
+            vertical: true
+            grid_options: { columns: 4 }
+          - &tegel_backup
+            type: tile
+            entity: sensor.pve_last_backup # wekelijkse back-up van VM 100 en LXC 101
+            name: Laatste back-up
+            icon: mdi:backup-restore
+            vertical: true
+            grid_options: { columns: 4 }
+          - &grafiek
+            type: history-graph
+            hours_to_show: 24
+            grid_options: { columns: full }
+            entities:
+              - entity: sensor.pve_cpu_usage
+                name: CPU
+              - entity: sensor.pve_memory_usage_percentage
+                name: Geheugen
 
-      # ---------------------------------------------------------- add-ons
+      # ----------------------------------------------- home assistant
+      # Geheugen en schijf via System Monitor (binnen de VM): Proxmox telt de cache van de VM mee.
       - type: grid
         cards:
           - type: heading
-            heading: Home Assistant en add-ons
+            heading: Home Assistant · VM 100
+            icon: mdi:home-assistant
+            badges:
+              - type: entity
+                entity: sensor.homeassistant_status
+          - <<: *meter_cpu
+            entity: sensor.system_monitor_processor_use
+          - <<: *meter_geheugen
+            entity: sensor.system_monitor_memory_usage
+          - <<: *meter_schijf
+            entity: sensor.system_monitor_disk_usage_config
+          - <<: *tegel_sinds
+            entity: sensor.system_monitor_uptime
+          - <<: *tegel_vrij
+            entity: sensor.home_assistant_host_disk_free
+          - <<: *tegel_backup
+            entity: sensor.backup_last_successful_automatic_backup # elke nacht, lokaal + Google Drive
+          - <<: *grafiek
+            entities:
+              - entity: sensor.system_monitor_processor_use
+                name: CPU
+              - entity: sensor.system_monitor_memory_usage
+                name: Geheugen
+
+      # ------------------------------------------------------ add-ons
+      - type: grid
+        cards:
+          - type: heading
+            heading: Add-ons en updates
             icon: mdi:puzzle
-          - type: tile
-            entity: sensor.home_assistant_core_cpu_percent
-            name: Home Assistant CPU
-            icon: mdi:cpu-64-bit
-          - type: tile
-            entity: sensor.home_assistant_core_memory_percent
-            name: Home Assistant geheugen
-            icon: mdi:memory
           - type: tile
             entity: binary_sensor.go2rtc_running
             name: go2rtc (deurbelbeeld)
@@ -235,39 +230,7 @@ views:
             icon: mdi:vpn
           - type: tile
             entity: update.home_assistant_core_update
-            name: Update Home Assistant
+            name: Home Assistant
           - type: tile
             entity: update.home_assistant_operating_system_update
-            name: Update HAOS
-
-      # ---------------------------------------------------- grafieken
-      - type: grid
-        cards:
-          - type: heading
-            heading: Afgelopen 24 uur
-            icon: mdi:chart-line
-          - type: history-graph
-            hours_to_show: 24
-            grid_options:
-              columns: full
-            entities:
-              - entity: sensor.system_monitor_processor_use
-                name: CPU
-              - entity: sensor.system_monitor_memory_usage
-                name: Geheugen
-          - type: history-graph
-            hours_to_show: 24
-            grid_options:
-              columns: full
-            entities:
-              - entity: sensor.system_monitor_network_throughput_in_enp6s18
-                name: Netwerk binnen
-              - entity: sensor.system_monitor_network_throughput_out_enp6s18
-                name: Netwerk uit
-          - type: markdown
-            grid_options:
-              columns: full
-            content: >
-              Bereikbaarheid van Home Assistant, Proxmox en de Deco: zie
-              [Uptime Kuma](http://uptime-kuma.home). Proxmox zelf:
-              [webinterface](https://192.168.2.23).
+            name: HAOS
