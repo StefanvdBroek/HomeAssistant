@@ -150,3 +150,31 @@ automation:
             Was dit geen update of herstart van jou, kijk dan in Proxmox wat er gebeurde.
           data:
             url: /dashboard-server/server
+
+template:
+  # Schijf van de LXC-containers als percentage en vrije ruimte, voor de meters op het dashboard.
+  # Proxmox geeft per LXC alleen het gebruik en het maximum (in GiB).
+  - sensor:
+      - name: Uptime Kuma schijf
+        unique_id: server_uptime_kuma_schijf
+        icon: mdi:harddisk
+        unit_of_measurement: "%"
+        state_class: measurement
+        state: >
+          {{ (states('sensor.uptime_kuma_disk_usage') | float
+              / states('sensor.uptime_kuma_max_disk_usage') | float * 100) | round(1) }}
+        availability: >
+          {{ states('sensor.uptime_kuma_disk_usage') | is_number
+             and states('sensor.uptime_kuma_max_disk_usage') | float(0) > 0 }}
+      - name: Uptime Kuma schijf vrij
+        unique_id: server_uptime_kuma_schijf_vrij
+        icon: mdi:harddisk
+        unit_of_measurement: GiB
+        device_class: data_size
+        state_class: measurement
+        state: >
+          {{ (states('sensor.uptime_kuma_max_disk_usage') | float
+              - states('sensor.uptime_kuma_disk_usage') | float) | round(1) }}
+        availability: >
+          {{ states('sensor.uptime_kuma_disk_usage') | is_number
+             and states('sensor.uptime_kuma_max_disk_usage') | is_number }}

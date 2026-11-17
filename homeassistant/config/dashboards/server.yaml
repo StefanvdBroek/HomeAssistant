@@ -214,6 +214,36 @@ views:
               - entity: sensor.system_monitor_memory_usage
                 name: Geheugen
 
+      # -------------------------------------------------- uptime kuma
+      # LXC: Proxmox ziet hier alles van binnenuit (CPU, geheugen, schijf). Schijf-% en vrij via
+      # template-sensoren in packages/server.yaml. Zit in de wekelijkse Proxmox-back-up.
+      - type: grid
+        cards:
+          - type: heading
+            heading: Uptime Kuma · LXC 101
+            icon: mdi:heart-pulse
+            badges:
+              - type: entity
+                entity: sensor.uptime_kuma_status
+          - <<: *meter_cpu
+            entity: sensor.uptime_kuma_cpu_usage
+          - <<: *meter_geheugen
+            entity: sensor.uptime_kuma_memory_usage_percentage
+          - <<: *meter_schijf
+            entity: sensor.uptime_kuma_schijf
+          - <<: *tegel_sinds
+            entity: sensor.uptime_kuma_uptime
+          - <<: *tegel_vrij
+            entity: sensor.uptime_kuma_schijf_vrij
+          - <<: *tegel_backup
+            entity: sensor.pve_last_backup # wekelijkse back-up van VM 100 en LXC 101
+          - <<: *grafiek
+            entities:
+              - entity: sensor.uptime_kuma_cpu_usage
+                name: CPU
+              - entity: sensor.uptime_kuma_memory_usage_percentage
+                name: Geheugen
+
       # ------------------------------------------------------ add-ons
       - type: grid
         cards:
