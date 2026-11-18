@@ -114,6 +114,15 @@ views:
                 geheugen: sensor.docker_memory_usage
                 schijf: sensor.docker_vm_schijf_gebruikt
 
+      # ----------------------------------------------------- containers
+      # Docker-containers op de Docker-VM, automatisch gevonden via de Portainer-integratie
+      # (https://192.168.2.43:9443, API-token). Nieuwe containers verschijnen vanzelf.
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:container-overzicht-card
+            titel: Containers
+
       # ------------------------------------------------------ bewaking
       # Monitors van Uptime Kuma (integratie uptime_kuma, Docker-VM). Kaart in hetzelfde bestand.
       - type: grid

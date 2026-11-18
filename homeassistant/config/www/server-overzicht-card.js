@@ -596,6 +596,155 @@ class InklapKopCard extends HTMLElement {
   getGridOptions() { return { columns: "full", rows: "auto" }; }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Kaart "Containers": alle Docker-containers uit de Portainer-integratie, automatisch gevonden
+// (elk apparaat met een entiteit met translation_key "container_state"). Per container: status
+// (+ gezondheid), CPU, geheugen, sinds wanneer hij draait, herstarts, update beschikbaar en een
+// herstartknop (twee keer tikken). Inklapbaar zoals de andere kaarten.
+//
+//   type: custom:container-overzicht-card
+//   titel: Containers
+//   integratie: portainer      # optioneel (standaard portainer)
+//   verberg: [portainer]       # optioneel: containernamen die je niet wilt zien
+
+class ContainerOverzichtCard extends InklapKaart {
+  setConfig(config) {
+    this._config = { integratie: "portainer", verberg: [], ...config };
+    this._sleutel = null;
+    this._bevestig = null; // device_id waarvoor "nog een keer tikken om te herstarten" openstaat
+    if (this._hass) this.hass = this._hass;
+  }
+
+  // Containers zoeken in het entiteitenregister van de frontend.
+  _containers() {
+    const ents = Object.values(this._hass.entities || {}).filter((e) => e.platform === this._config.integratie && e.device_id);
+    const perApparaat = {};
+    for (const e of ents) (perApparaat[e.device_id] ||= {})[e.translation_key] = e.entity_id;
+    return Object.entries(perApparaat)
+      .filter(([, k]) => k.container_state)
+      .map(([id, k]) => ({ id, k, naam: (this._hass.devices?.[id]?.name_by_user || this._hass.devices?.[id]?.name || id) }))
+      .filter((c) => !this._config.verberg.includes(c.naam))
+      .sort((a, b) => a.naam.localeCompare(b.naam));
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    if (!this._config) return;
+    const lijst = this._containers();
+    const sleutel = JSON.stringify([lijst.map((c) => Object.values(c.k).map((i) => hass.states[i]?.state)), this._bevestig, Math.floor(Date.now() / 60000)]);
+    this._laadProfiel();
+    if (sleutel === this._sleutel) return;
+    this._sleutel = sleutel;
+    this._teken();
+  }
+
+  _teken() {
+    if (!this.shadowRoot) this.attachShadow({ mode: "open" });
+    const st = this._hass.states;
+    const v = (id) => (id ? st[id] : undefined);
+    const lijst = this._containers();
+    const balk = (soort, waarde, tekst) => {
+      if (waarde === null) return `<div class="meter leeg"><span class="lbl">${soort}</span><span class="pct">–</span></div>`;
+      const [oranje, rood] = soort === "CPU" ? GRENS.cpu : GRENS.geheugen;
+      const kleur = waarde >= rood ? "rood" : waarde >= oranje ? "oranje" : "groen";
+      return `<div class="meter"><span class="lbl">${soort}</span><div class="spoor"><div class="vul ${kleur}" style="width:${Math.max(2, Math.min(100, waarde))}%"></div></div><span class="pct">${tekst}</span></div>`;
+    };
+    const rijen = lijst.map((c) => {
+      const toestand = v(c.k.container_state)?.state || "unavailable";
+      const gezond = v(c.k.container_health_state)?.state;
+      const ok = OK.includes(toestand) && gezond !== "unhealthy";
+      const label = gezond === "unhealthy" ? "ongezond" : (STATUS[toestand] || toestand);
+      const cpu = getal(v(c.k.cpu_usage_total));
+      const memPct = getal(v(c.k.memory_usage_percentage));
+      const memMb = getal(v(c.k.memory_usage));
+      const gestart = v(c.k.container_started_at)?.state;
+      const herstarts = getal(v(c.k.container_restart_count)) || 0;
+      const update = v(c.k.container_image_update)?.state === "on";
+      const image = (v(c.k.image)?.state || "").split("@")[0];
+      const bevestig = this._bevestig === c.id;
+      return `
+        <div class="rij ${ok ? "" : "fout"}" data-id="${esc(c.id)}" data-info="${esc(c.k.container_state)}" role="button" tabindex="0">
+          <div class="naam">
+            <ha-icon class="ico" icon="mdi:docker"></ha-icon>
+            <div class="tekst">
+              <div class="titel">${esc(c.naam)}${update ? ` <ha-icon class="upd" icon="mdi:arrow-up-circle" title="Nieuwere image beschikbaar"></ha-icon>` : ""}</div>
+              <div class="soort">${esc(image)}${herstarts ? ` · ${herstarts}× herstart` : ""}</div>
+            </div>
+          </div>
+          <div class="status"><span class="pil ${ok ? "ok" : "nok"}"><span class="bol"></span>${esc(label)}</span></div>
+          <div class="meters">
+            ${balk("CPU", cpu, cpu === null ? "–" : `${nl(cpu, 1)}%`)}
+            ${balk("RAM", memPct, memMb === null ? "–" : `${Math.round(memMb)} MB`)}
+          </div>
+          <div class="sinds"><span class="kl">aan</span> ${gestart && Date.parse(gestart) ? esc(duur(new Date(gestart))) : "–"}</div>
+          <div class="actie">${c.k.restart_container ? `<button class="herstart ${bevestig ? "zeker" : ""}" data-herstart="${esc(c.id)}" title="${bevestig ? "Tik nog een keer om te herstarten" : "Herstarten"}" aria-label="Herstarten">
+            <ha-icon icon="${bevestig ? "mdi:check" : "mdi:restart"}"></ha-icon>${bevestig ? "<span>Zeker?</span>" : ""}</button>` : ""}</div>
+        </div>`;
+    }).join("");
+    const n = lijst.length;
+    const aantalOk = lijst.filter((c) => OK.includes(v(c.k.container_state)?.state) && v(c.k.container_health_state)?.state !== "unhealthy").length;
+
+    this.shadowRoot.innerHTML = `
+      <style>${STIJL}${STIJL_BEWAKING}${STIJL_CONTAINERS}</style>
+      <ha-card class="${this._ingeklapt ? "ingeklapt" : ""}">
+        ${this._kop(esc(this._config.titel || "Containers"), "",
+          `<span class="samen ${aantalOk === n ? "ok" : "nok"}">${aantalOk} van ${n} actief</span>`)}
+        ${this._ingeklapt ? "" : n === 0 ? `<div class="leeg-melding">Geen containers gevonden (integratie ${esc(this._config.integratie)}).</div>` : `
+        <div class="tabel containers">
+          <div class="rij kopregel"><div>Container</div><div>Status</div><div class="meters"><span>CPU</span><span>Geheugen</span></div><div class="sinds">Aan sinds</div><div></div></div>
+          ${rijen}
+        </div>`}
+      </ha-card>`;
+    this._koppelKop();
+
+    this.shadowRoot.querySelectorAll(".rij[data-id]").forEach((el) => {
+      const info = (e) => {
+        if (e.target.closest("button")) return;
+        this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: el.dataset.info }, bubbles: true, composed: true }));
+      };
+      el.addEventListener("click", info);
+      el.addEventListener("keydown", (e) => { if (e.key === "Enter") info(e); });
+    });
+    this.shadowRoot.querySelectorAll("button[data-herstart]").forEach((b) => b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = b.dataset.herstart;
+      if (this._bevestig !== id) { // eerste tik: om bevestiging vragen (3 s)
+        this._bevestig = id; this._teken();
+        clearTimeout(this._bevestigTimer);
+        this._bevestigTimer = setTimeout(() => { this._bevestig = null; this._teken(); }, 3000);
+        return;
+      }
+      clearTimeout(this._bevestigTimer);
+      this._bevestig = null;
+      const c = this._containers().find((x) => x.id === id);
+      if (c?.k.restart_container) this._hass.callService("button", "press", { entity_id: c.k.restart_container });
+      this._teken();
+    }));
+  }
+
+  getCardSize() { try { return 2 + this._containers().length; } catch (e) { return 4; } }
+  getGridOptions() { return { columns: "full", rows: "auto" }; }
+}
+
+const STIJL_CONTAINERS = `
+  .containers .rij { grid-template-columns: minmax(170px, 1.4fr) 110px minmax(200px, 2fr) 90px 72px; }
+  .containers .kopregel .meters { grid-template-columns: repeat(2, 1fr); }
+  .containers .meters { grid-template-columns: repeat(2, 1fr); }
+  .containers .meter { grid-template-columns: 1fr 56px; }
+  .upd { --mdc-icon-size: 16px; color: var(--warning-color, #ffa600); vertical-align: -2px; }
+  .actie { display: flex; justify-content: flex-end; }
+  button.herstart { display: inline-flex; align-items: center; gap: 4px; border: none; cursor: pointer; border-radius: 999px;
+    padding: 6px; background: transparent; color: var(--secondary-text-color); font: inherit; font-size: 12px; --mdc-icon-size: 20px; }
+  button.herstart:hover { background: var(--secondary-background-color, rgba(127,127,127,.12)); color: var(--primary-text-color); }
+  button.herstart.zeker { background: var(--warning-color, #ffa600); color: #fff; padding: 6px 10px; }
+  .leeg-melding { color: var(--secondary-text-color); padding: 8px 0 12px; }
+  @container (max-width: 640px) {
+    .containers .rij { grid-template-columns: 1fr auto; grid-template-areas: "naam status" "meters meters" "sinds actie"; }
+    .actie { grid-area: actie; }
+  }
+`;
+
+customElements.define("container-overzicht-card", ContainerOverzichtCard);
 customElements.define("inklap-kop-card", InklapKopCard);
 customElements.define("server-overzicht-card", ServerOverzichtCard);
 customElements.define("pc-totaal-card", PcTotaalCard);
@@ -603,6 +752,8 @@ customElements.define("uptime-overzicht-card", UptimeOverzichtCard);
 window.customCards = window.customCards || [];
 window.customCards.push({ type: "server-overzicht-card", name: "Server-overzicht",
   description: "Status, CPU, geheugen, schijf en uptime van je servers in één tabel." });
+window.customCards.push({ type: "container-overzicht-card", name: "Containers",
+  description: "Docker-containers uit de Portainer-integratie: status, CPU, geheugen en herstarten." });
 window.customCards.push({ type: "pc-totaal-card", name: "Mini-pc totaal",
   description: "CPU, geheugen en schijf van de hele pc, met per server hoeveel hij gebruikt." });
 window.customCards.push({ type: "uptime-overzicht-card", name: "Bewaking (Uptime Kuma)",
