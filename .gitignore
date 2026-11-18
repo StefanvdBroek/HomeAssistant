@@ -33,10 +33,6 @@ mosquitto/log/*
 zigbee2mqtt/data/*
 !zigbee2mqtt/data/.gitkeep
 
-# Eufy-brug (sessie en apparaatsleutels)
-eufy/data/*
-!eufy/data/.gitkeep
-
 # ESPHome build-bestanden en geheimen
 esphome/config/.esphome/
 esphome/config/secrets.yaml

@@ -59,35 +59,6 @@ views:
               De zon gaat
               {% if is_state('sun.sun', 'above_horizon') %}onder om **{{ as_timestamp(states('sensor.sun_next_setting')) | timestamp_custom('%H:%M') }}**
               {% else %}op om **{{ as_timestamp(states('sensor.sun_next_rising')) | timestamp_custom('%H:%M') }}**{% endif %}.
-          # Alleen het beeld; tikken opent het dashboard "Deurbel" met alle instellingen.
-          - type: picture-entity
-            entity: camera.deurbel
-            name: Deurbel
-            camera_view: live
-            show_state: false
-            tap_action:
-              action: navigate
-              navigation_path: /dashboard-deurbel/deurbel
-            grid_options:
-              columns: full
-            visibility:
-              - condition: state
-                entity: camera.deurbel
-                state: streaming
-          - type: picture-entity
-            entity: camera.deurbel
-            name: Deurbel
-            camera_view: auto
-            show_state: false
-            tap_action:
-              action: navigate
-              navigation_path: /dashboard-deurbel/deurbel
-            grid_options:
-              columns: full
-            visibility:
-              - condition: state
-                entity: camera.deurbel
-                state_not: streaming
           - type: weather-forecast
             entity: weather.home
             show_current: false

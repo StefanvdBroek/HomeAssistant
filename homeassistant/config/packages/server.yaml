@@ -74,7 +74,6 @@ automation:
     triggers:
       - trigger: state
         entity_id:
-          - binary_sensor.go2rtc_running
           - binary_sensor.tailscale_running
         from: "on"
         to: "off"

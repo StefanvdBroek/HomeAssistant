@@ -41,30 +41,10 @@ Instellingen → Apparaten & diensten → Integratie toevoegen → **MQTT**:
 
 Zigbee2MQTT-apparaten verschijnen daarna automatisch in Home Assistant.
 
-### Eufy-deurbel en camera's
-
-Eufy heeft geen officiële integratie. De container `eufy-security-ws` logt in bij Eufy en geeft de apparaten door aan
-de integratie **Eufy Security** (Marketplace, van fuatakgun).
-
-1. Maak in de Eufy-app een **apart account** en deel de deurbel ermee (Instellingen → Delen). Log met dat account één
-   keer in de app in en accepteer de uitnodiging.
-2. Vul `EUFY_USERNAME` en `EUFY_PASSWORD` van dat account in `.env` in.
-3. Start de brug en go2rtc: `docker compose --profile eufy up -d` (op de Mac: `scripts/mac/ha.sh eufy`).
-4. Installeer **Eufy Security** via Instellingen → Marketplace en herstart Home Assistant.
-5. Instellingen → Apparaten & diensten → Integratie toevoegen → **Eufy Security**:
-   host `127.0.0.1` (mini-pc) of `eufy-security-ws` (Mac), poort `3000`.
-
-Vraagt Eufy om een code of captcha, dan verschijnt die in Home Assistant als melding om in te vullen.
-
-**Live beeld**: de profiel-`eufy` start ook **go2rtc**. De integratie stuurt de stream van de deurbel daarheen en Home
-Assistant leest hem terug. Zet bij Eufy Security → Configureren het *RTSP server address* op `127.0.0.1` (mini-pc) of
-`go2rtc` (Mac). Met de schakelaar *Live beeld altijd aan* start Home Assistant de stream steeds opnieuw als de deurbel hem
-beëindigt (alleen zinvol als de deurbel op stroom zit).
-
 ## Testen op macOS
 
 ```bash
-scripts/mac/ha.sh up          # start Home Assistant (ook: down, restart, logs, status, eufy)
+scripts/mac/ha.sh up          # start Home Assistant (ook: down, restart, logs, status)
 scripts/mac/install-mdns.sh   # eenmalig: maakt http://smarthome.local beschikbaar op het netwerk
 ```
 

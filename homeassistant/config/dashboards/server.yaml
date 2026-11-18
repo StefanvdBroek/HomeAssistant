@@ -314,10 +314,6 @@ views:
             heading: Add-ons en updates
             icon: mdi:puzzle
           - type: tile
-            entity: binary_sensor.go2rtc_running
-            name: go2rtc (deurbelbeeld)
-            icon: mdi:video
-          - type: tile
             entity: binary_sensor.tailscale_running
             name: Tailscale
             icon: mdi:vpn
