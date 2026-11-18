@@ -15,14 +15,12 @@ views:
             columns: 3
             square: false
             cards:
-              - type: button
-                name: Uit
+              - type: button # aan én uit: script tv_lg_aan_uit (packages/tv.yaml, Wake-on-LAN)
+                name: Aan/uit
                 icon: mdi:power
                 tap_action:
                   action: perform-action
-                  perform_action: media_player.turn_off
-                  target:
-                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  perform_action: script.tv_lg_aan_uit
               - type: button
                 name: Dempen
                 icon: mdi:volume-mute
