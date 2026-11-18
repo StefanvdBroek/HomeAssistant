@@ -397,16 +397,12 @@ views:
             columns: 3
             square: false
             cards:
-              - type: button
+              - type: button # aan én uit: script tv_samsung_aan_uit (packages/tv.yaml, Wake-on-LAN)
                 name: Aan/uit
                 icon: mdi:power
                 tap_action:
                   action: perform-action
-                  perform_action: remote.send_command
-                  target:
-                    entity_id: remote.samsung_tv_zolder
-                  data:
-                    command: KEY_POWER
+                  perform_action: script.tv_samsung_aan_uit
               - type: button
                 name: Dempen
                 icon: mdi:volume-mute

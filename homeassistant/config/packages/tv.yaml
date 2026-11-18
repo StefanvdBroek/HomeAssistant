@@ -2,8 +2,9 @@
 # Een tv die uit staat is niet meer via het netwerk te bedienen; aanzetten gaat met een
 # Wake-on-LAN-pakket naar het MAC-adres. Op de tv moet daarvoor aan staan:
 #   LG: Instellingen > Algemeen > Apparaten > TV-beheer > "Inschakelen via Wi-Fi" (+ Quick Start+).
-# Wake on LAN is als integratie toegevoegd (Instellingen > Apparaten & diensten), met hetzelfde
-# MAC-adres; die levert ook de actie wake_on_lan.send_magic_packet.
+#   Samsung: Instellingen > Algemeen > Netwerk > Expertinstellingen > "Inschakelen met mobiel".
+# Wake on LAN is per tv als integratie toegevoegd (Instellingen > Apparaten & diensten), met de
+# MAC-adressen hieronder; die levert ook de actie wake_on_lan.send_magic_packet.
 
 script:
   # Eén knop voor aan én uit (afstandsbediening). Staat de tv aan: uit. Staat hij uit of is hij
@@ -28,6 +29,30 @@ script:
                 - action: wake_on_lan.send_magic_packet
                   data:
                     mac: c8:99:b2:3a:45:8c
+                    broadcast_address: 192.168.2.255
+                - delay: "00:00:01"
+
+  # Samsung op zolder: zelfde werkwijze als de LG.
+  tv_samsung_aan_uit:
+    alias: Samsung tv zolder aan/uit
+    icon: mdi:power
+    mode: single
+    sequence:
+      - if:
+          - condition: state
+            entity_id: media_player.samsung_tv_zolder
+            state: ["on", "playing", "paused", "idle", "buffering"]
+        then:
+          - action: media_player.turn_off
+            target:
+              entity_id: media_player.samsung_tv_zolder
+        else:
+          - repeat:
+              count: 3
+              sequence:
+                - action: wake_on_lan.send_magic_packet
+                  data:
+                    mac: 6c:70:cb:97:96:48
                     broadcast_address: 192.168.2.255
                 - delay: "00:00:01"
 
@@ -90,5 +115,22 @@ automation:
             - action: wake_on_lan.send_magic_packet
               data:
                 mac: c8:99:b2:3a:45:8c
+                broadcast_address: 192.168.2.255
+            - delay: "00:00:01"
+
+  # Idem voor de Samsung (de integratie kent het MAC-adres, maar doet zelf geen Wake-on-LAN).
+  - id: tv_samsung_aanzetten
+    alias: Tv - Samsung zolder aanzetten via Wake-on-LAN
+    mode: single
+    triggers:
+      - trigger: samsungtv.turn_on
+        entity_id: media_player.samsung_tv_zolder
+    actions:
+      - repeat:
+          count: 3
+          sequence:
+            - action: wake_on_lan.send_magic_packet
+              data:
+                mac: 6c:70:cb:97:96:48
                 broadcast_address: 192.168.2.255
             - delay: "00:00:01"
