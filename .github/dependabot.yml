@@ -22,3 +22,21 @@ updates:
           - "*"
         exclude-patterns:
           - "ghcr.io/home-assistant/*"
+
+  # Stacks op de Docker-VM (VM 103): Portainer, Uptime Kuma, Glances, … (stacks/*/compose.yaml).
+  # Eén PR per stack, zodat je per dienst de release notes ziet en apart kunt bijwerken.
+  # Na het mergen op de VM: compose.yaml kopiëren naar /opt/stacks/<naam> en daar
+  #   docker compose pull && docker compose up -d
+  - package-ecosystem: docker-compose
+    directories:
+      - /stacks/*
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    commit-message:
+      prefix: "update"
+    labels:
+      - updates
+      - stacks
