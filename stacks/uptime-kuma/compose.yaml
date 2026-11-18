@@ -1,0 +1,15 @@
+# Uptime Kuma: bewaakt Home Assistant, Proxmox, de Deco, internet en healthchecks.io.
+# Draait op de Docker-VM (VM 103 "docker", Debian 13) in /opt/stacks/uptime-kuma.
+# Webinterface: http://docker.home:3001  (poort 80 blijft vrij voor een latere reverse proxy)
+# De map data/ (SQLite met monitors en meldingen) staat niet in git.
+services:
+  uptime-kuma:
+    container_name: uptime-kuma
+    image: louislam/uptime-kuma:2.5.12
+    volumes:
+      - ./data:/app/data
+    environment:
+      - TZ=Europe/Amsterdam
+    ports:
+      - "3001:3001"
+    restart: unless-stopped

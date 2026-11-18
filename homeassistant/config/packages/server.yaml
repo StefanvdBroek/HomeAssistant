@@ -1,5 +1,5 @@
 # Server: gezondheid van de Home Assistant-VM (System Monitor + Supervisor) en Proxmox.
-# Of de servers bereikbaar zijn bewaakt Uptime Kuma (LXC 101, http://uptime-kuma.home); dat
+# Of de servers bereikbaar zijn bewaakt Uptime Kuma (Docker-VM, http://192.168.2.43:3001); dat
 # werkt ook als Home Assistant zelf plat ligt. Hier gaat het om schijf, geheugen en CPU.
 # Dashboard: dashboards/server.yaml (alleen voor Stefan).
 
@@ -90,23 +90,19 @@ automation:
             tag: "server_addon_{{ trigger.entity_id }}"
             url: /dashboard-server/server
 
-  # -------------------------------------------- LXC-container gestopt
-  # Uptime Kuma en Playground draaien naast Home Assistant op Proxmox. Ligt Proxmox zelf
-  # plat, dan ligt Home Assistant ook plat: dat meldt Uptime Kuma/healthchecks.io.
+  # ---------------------------------------------- Docker-VM gestopt
+  # De Docker-VM (VM 103) draait naast Home Assistant op Proxmox, met Uptime Kuma, Portainer en
+  # Glances. Ligt Proxmox zelf plat, dan ligt Home Assistant ook plat: dat meldt healthchecks.io.
   - id: server_container_gestopt
-    alias: Server - melding als een container op Proxmox niet meer draait
+    alias: Server - melding als de Docker-VM niet meer draait
     mode: queued
     triggers:
       - trigger: state
-        entity_id:
-          - sensor.uptime_kuma_status
-          - sensor.playground_status
+        entity_id: sensor.docker_status
         from: running
         for: "00:05:00"
       - trigger: state
-        entity_id:
-          - sensor.uptime_kuma_status
-          - sensor.playground_status
+        entity_id: sensor.docker_status
         to: running
         id: terug
     conditions:
@@ -116,19 +112,15 @@ automation:
              or (trigger.from_state.state not in ['unknown', 'unavailable']
                  and (now() - trigger.from_state.last_changed).total_seconds() > 300) }}
     actions:
-      - variables:
-          naam: >
-            {{ {'sensor.uptime_kuma_status': 'Uptime Kuma (LXC 101)',
-                'sensor.playground_status': 'Playground (LXC 102)'}[trigger.entity_id] }}
       - action: notify.mobile_app_iphone_van_stefan
         data:
-          title: "{{ '✅ ' ~ naam ~ ' draait weer' if trigger.id == 'terug' else '🧊 ' ~ naam ~ ' is gestopt' }}"
+          title: "{{ '✅ Docker-VM draait weer' if trigger.id == 'terug' else '🧊 Docker-VM is gestopt' }}"
           message: >
-            {% if trigger.id == 'terug' %}De container draait weer.{% else %}Status in Proxmox:
-            {{ trigger.to_state.state }}. Start hem in Proxmox of kijk in de log van de
-            container.{% endif %}
+            {% if trigger.id == 'terug' %}Uptime Kuma, Portainer en Glances zijn weer bereikbaar.
+            {% else %}Status in Proxmox: {{ trigger.to_state.state }}. Uptime Kuma draait hierop,
+            dus ook de bewaking ligt stil. Start VM 103 in Proxmox.{% endif %}
           data:
-            tag: "server_container_{{ trigger.entity_id }}"
+            tag: server_docker_vm
             url: /dashboard-server/server
 
   # ---------------------------------------------- VM opnieuw opgestart
@@ -159,63 +151,9 @@ automation:
             url: /dashboard-server/server
 
 template:
-  # Schijf van de LXC-containers als percentage en vrije ruimte, voor de meters op het dashboard.
-  # Proxmox geeft per LXC alleen het gebruik en het maximum (in GiB).
   - sensor:
-      - name: Uptime Kuma schijf
-        unique_id: server_uptime_kuma_schijf
-        icon: mdi:harddisk
-        unit_of_measurement: "%"
-        state_class: measurement
-        state: >
-          {{ (states('sensor.uptime_kuma_disk_usage') | float
-              / states('sensor.uptime_kuma_max_disk_usage') | float * 100) | round(1) }}
-        availability: >
-          {{ states('sensor.uptime_kuma_disk_usage') | is_number
-             and states('sensor.uptime_kuma_max_disk_usage') | float(0) > 0 }}
-      - name: Uptime Kuma schijf vrij
-        unique_id: server_uptime_kuma_schijf_vrij
-        icon: mdi:harddisk
-        unit_of_measurement: GiB
-        device_class: data_size
-        state_class: measurement
-        state: >
-          {{ (states('sensor.uptime_kuma_max_disk_usage') | float
-              - states('sensor.uptime_kuma_disk_usage') | float) | round(1) }}
-        availability: >
-          {{ states('sensor.uptime_kuma_disk_usage') | is_number
-             and states('sensor.uptime_kuma_max_disk_usage') | is_number }}
-      - name: Playground schijf
-        unique_id: server_playground_schijf
-        icon: mdi:harddisk
-        unit_of_measurement: "%"
-        state_class: measurement
-        state: >
-          {{ (states('sensor.playground_disk_usage') | float
-              / states('sensor.playground_max_disk_usage') | float * 100) | round(1) }}
-        availability: >
-          {{ states('sensor.playground_disk_usage') | is_number
-             and states('sensor.playground_max_disk_usage') | float(0) > 0 }}
-      - name: Playground schijf vrij
-        unique_id: server_playground_schijf_vrij
-        icon: mdi:harddisk
-        unit_of_measurement: GiB
-        device_class: data_size
-        state_class: measurement
-        state: >
-          {{ (states('sensor.playground_max_disk_usage') | float
-              - states('sensor.playground_disk_usage') | float) | round(1) }}
-        availability: >
-          {{ states('sensor.playground_disk_usage') | is_number
-             and states('sensor.playground_max_disk_usage') | is_number }}
-      # Playground zit (bewust) niet in de wekelijkse Proxmox-back-up; zo blijft de tegel
-      # "Laatste back-up" gelijk aan die van de andere servers en zie je dat er geen is.
-      - name: Playground laatste back-up
-        unique_id: server_playground_laatste_backup
-        icon: mdi:backup-restore
-        state: Geen back-up
-      # Ruimte die de schijf van de Home Assistant-VM op de SSD inneemt: de VM-/LXC-opslag
-      # (local-lvm, thin) min de LXC's. Proxmox kan niet in een VM kijken; dit is wat de host ziet.
+      # Ruimte die de schijf van de Home Assistant-VM op de SSD inneemt: de VM-opslag (local-lvm,
+      # thin) min wat de Docker-VM gebruikt (volgens Glances). Proxmox kan niet in een VM kijken.
       - name: Home Assistant schijf op host
         unique_id: server_home_assistant_schijf_op_host
         icon: mdi:harddisk
@@ -224,6 +162,5 @@ template:
         state_class: measurement
         state: >
           {{ [0, states('sensor.storage_local_lvm_used_storage') | float
-                 - states('sensor.uptime_kuma_disk_usage') | float(0)
-                 - states('sensor.playground_disk_usage') | float(0)] | max | round(1) }}
+                 - states('sensor.docker_vm_schijf_gebruikt') | float(0)] | max | round(1) }}
         availability: "{{ states('sensor.storage_local_lvm_used_storage') | is_number }}"

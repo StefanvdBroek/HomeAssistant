@@ -1,6 +1,6 @@
 # Server: de Home Assistant-VM (System Monitor + Supervisor) en Proxmox.
 # Alleen voor Stefan: dashboard alleen voor beheerders, weergave alleen voor deze gebruiker.
-# Meldingen: packages/server.yaml. Bereikbaarheid: Uptime Kuma (http://uptime-kuma.home).
+# Meldingen: packages/server.yaml. Bereikbaarheid: Uptime Kuma (http://192.168.2.43:3001).
 title: Server
 views:
   - title: Server
@@ -54,26 +54,15 @@ views:
                 geheugen: sensor.system_monitor_memory_usage
                 schijf: sensor.system_monitor_disk_usage_config
                 sinds: sensor.system_monitor_uptime
-              - naam: Uptime Kuma
-                soort: LXC 101
-                icoon: mdi:heart-pulse
-                status: sensor.uptime_kuma_status
-                cpu: sensor.uptime_kuma_cpu_usage
-                geheugen: sensor.uptime_kuma_memory_usage_percentage
-                schijf_gebruikt: sensor.uptime_kuma_disk_usage
-                schijf_max: sensor.uptime_kuma_max_disk_usage
-                sinds: sensor.uptime_kuma_uptime
-                url: http://uptime-kuma.home
-              - naam: Playground
-                soort: LXC 102
-                icoon: mdi:flask-outline
-                status: sensor.playground_status
-                cpu: sensor.playground_cpu_usage
-                geheugen: sensor.playground_memory_usage_percentage
-                schijf_gebruikt: sensor.playground_disk_usage
-                schijf_max: sensor.playground_max_disk_usage
-                sinds: sensor.playground_uptime
-                url: http://192.168.2.230
+              - naam: Docker
+                soort: VM 103 · Portainer
+                icoon: mdi:docker
+                status: sensor.docker_status
+                cpu: sensor.docker_vm_cpu # Glances, van binnenuit
+                geheugen: sensor.docker_vm_geheugen
+                schijf: sensor.docker_vm_schijf
+                sinds: sensor.docker_vm_aan_sinds
+                url: https://192.168.2.43:9443
 
       # -------------------------------------------------------- netwerk
       # Netwerkapparaten: alleen bereikbaarheid (Ping-integratie, elke 30 s). Zelfde kaart als
@@ -119,25 +108,20 @@ views:
                 kernen: sensor.homeassistant_max_cpu
                 geheugen: sensor.homeassistant_memory_usage
                 schijf: sensor.home_assistant_schijf_op_host
-              - naam: Uptime Kuma
-                cpu: sensor.uptime_kuma_cpu_usage
-                kernen: sensor.uptime_kuma_max_cpu
-                geheugen: sensor.uptime_kuma_memory_usage
-                schijf: sensor.uptime_kuma_disk_usage
-              - naam: Playground
-                cpu: sensor.playground_cpu_usage
-                kernen: sensor.playground_max_cpu
-                geheugen: sensor.playground_memory_usage
-                schijf: sensor.playground_disk_usage
+              - naam: Docker
+                cpu: sensor.docker_cpu_usage
+                kernen: sensor.docker_max_cpu
+                geheugen: sensor.docker_memory_usage
+                schijf: sensor.docker_vm_schijf_gebruikt
 
       # ------------------------------------------------------ bewaking
-      # Monitors van Uptime Kuma (integratie uptime_kuma, LXC 101). Kaart in hetzelfde bestand.
+      # Monitors van Uptime Kuma (integratie uptime_kuma, Docker-VM). Kaart in hetzelfde bestand.
       - type: grid
         column_span: 3
         cards:
           - type: custom:uptime-overzicht-card
             titel: Bewaking (Uptime Kuma)
-            url: http://uptime-kuma.home
+            url: http://192.168.2.43:3001
             monitors:
               - naam: Thuis online
                 id: thuis_online_healthcecks_io
@@ -170,8 +154,7 @@ views:
             status:
               - sensor.pve_status
               - sensor.homeassistant_status
-              - sensor.uptime_kuma_status
-              - sensor.playground_status
+              - sensor.docker_status
 
       # ------------------------------------------------------ proxmox
       - type: grid
@@ -229,7 +212,7 @@ views:
             grid_options: { columns: 4 }
           - &tegel_backup
             type: tile
-            entity: sensor.pve_last_backup # wekelijkse back-up van VM 100 en LXC 101
+            entity: sensor.pve_last_backup # wekelijkse back-up van VM 100 en VM 103
             name: Laatste back-up
             icon: mdi:backup-restore
             vertical: true
@@ -274,65 +257,39 @@ views:
               - entity: sensor.system_monitor_memory_usage
                 name: Geheugen
 
-      # -------------------------------------------------- uptime kuma
-      # LXC: Proxmox ziet hier alles van binnenuit (CPU, geheugen, schijf). Schijf-% en vrij via
-      # template-sensoren in packages/server.yaml. Zit in de wekelijkse Proxmox-back-up.
+      # --------------------------------------------------------- docker
+      # VM 103 (Debian 13 + Docker + Portainer). Cijfers van Glances (van binnenuit), net als
+      # System Monitor bij Home Assistant. Zit in de wekelijkse Proxmox-back-up.
       - type: grid
         visibility: *grafieken_open
         cards:
           - type: heading
-            heading: Uptime Kuma · LXC 101
-            icon: mdi:heart-pulse
+            heading: Docker · VM 103
+            icon: mdi:docker
             badges:
               - type: entity
-                entity: sensor.uptime_kuma_status
-          - <<: *meter_cpu
-            entity: sensor.uptime_kuma_cpu_usage
-          - <<: *meter_geheugen
-            entity: sensor.uptime_kuma_memory_usage_percentage
-          - <<: *meter_schijf
-            entity: sensor.uptime_kuma_schijf
-          - <<: *tegel_sinds
-            entity: sensor.uptime_kuma_uptime
-          - <<: *tegel_vrij
-            entity: sensor.uptime_kuma_schijf_vrij
-          - <<: *tegel_backup
-            entity: sensor.pve_last_backup # wekelijkse back-up van VM 100 en LXC 101
-          - <<: *grafiek
-            entities:
-              - entity: sensor.uptime_kuma_cpu_usage
-                name: CPU
-              - entity: sensor.uptime_kuma_memory_usage_percentage
-                name: Geheugen
-
-      # --------------------------------------------------- playground
-      # LXC 102 (PlaygroundAdmin). Zit niet in de wekelijkse back-up: de tegel toont dat.
-      - type: grid
-        visibility: *grafieken_open
-        cards:
-          - type: heading
-            heading: Playground · LXC 102
-            icon: mdi:flask-outline
-            badges:
+                entity: sensor.docker_status
               - type: entity
-                entity: sensor.playground_status
+                entity: sensor.docker_vm_containers
+                name: Containers
+                show_name: true
           - <<: *meter_cpu
-            entity: sensor.playground_cpu_usage
+            entity: sensor.docker_vm_cpu
           - <<: *meter_geheugen
-            entity: sensor.playground_memory_usage_percentage
+            entity: sensor.docker_vm_geheugen
           - <<: *meter_schijf
-            entity: sensor.playground_schijf
+            entity: sensor.docker_vm_schijf
           - <<: *tegel_sinds
-            entity: sensor.playground_uptime
+            entity: sensor.docker_vm_aan_sinds
           - <<: *tegel_vrij
-            entity: sensor.playground_schijf_vrij
+            entity: sensor.docker_vm_schijf_vrij
           - <<: *tegel_backup
-            entity: sensor.playground_laatste_back_up
+            entity: sensor.pve_last_backup # wekelijkse back-up van VM 100 en VM 103
           - <<: *grafiek
             entities:
-              - entity: sensor.playground_cpu_usage
+              - entity: sensor.docker_vm_cpu
                 name: CPU
-              - entity: sensor.playground_memory_usage_percentage
+              - entity: sensor.docker_vm_geheugen
                 name: Geheugen
 
       # ------------------------------------------------------ add-ons

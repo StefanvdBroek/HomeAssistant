@@ -1,0 +1,17 @@
+# Portainer CE: webinterface voor de containers op de Docker-VM (VM 103 "docker", Debian 13).
+# Draait in /opt/stacks/portainer. Webinterface: https://docker.home:9443
+# Na de eerste start binnen 5 minuten een beheerder aanmaken, anders vergrendelt Portainer zich
+# (dan: docker restart portainer).
+services:
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce:2.45.3
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    ports:
+      - "9443:9443"
+    restart: unless-stopped
+
+volumes:
+  portainer_data:

@@ -1,0 +1,18 @@
+# Glances: CPU, geheugen, schijf en containers van de Docker-VM, van binnenuit gemeten.
+# Proxmox kan niet in een VM kijken (geen schijfgebruik, geheugen incl. cache); Home Assistant
+# leest deze cijfers via de integratie Glances (http://192.168.2.43:61208, API v4).
+# Draait op de Docker-VM (VM 103 "docker") in /opt/stacks/glances.
+services:
+  glances:
+    container_name: glances
+    image: nicolargo/glances:4.5.9-full
+    pid: host
+    network_mode: host # poort 61208
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/rootfs:ro # schijf van de VM zelf
+      - /etc/os-release:/etc/os-release:ro
+    environment:
+      - TZ=Europe/Amsterdam
+      - GLANCES_OPT=-w --disable-webui # alleen de API, geen webinterface
+    restart: unless-stopped
