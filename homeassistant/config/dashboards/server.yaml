@@ -147,6 +147,12 @@ views:
               - naam: Deco
                 id: deco
                 icoon: mdi:router-wireless
+              - naam: Docker-VM
+                id: docker_vm
+                icoon: mdi:docker
+              - naam: Portainer
+                id: portainer
+                icoon: mdi:view-dashboard-outline
               - naam: Adchieve production
                 id: adchieve_production
                 icoon: mdi:briefcase-outline
