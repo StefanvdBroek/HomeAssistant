@@ -12,7 +12,7 @@ views:
           - type: media-control
             entity: media_player.living_room_lg_webos_tv_oled65b29la
           - type: grid
-            columns: 3
+            columns: 2
             square: false
             cards:
               - type: button # aan én uit: script tv_lg_aan_uit (packages/tv.yaml, Wake-on-LAN)
@@ -21,16 +21,6 @@ views:
                 tap_action:
                   action: perform-action
                   perform_action: script.tv_lg_aan_uit
-              - type: button
-                name: Dempen
-                icon: mdi:volume-mute
-                tap_action:
-                  action: perform-action
-                  perform_action: webostv.button
-                  target:
-                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
-                  data:
-                    button: MUTE
               - type: button
                 name: Instellingen
                 icon: mdi:cog
@@ -41,14 +31,18 @@ views:
                     entity_id: media_player.living_room_lg_webos_tv_oled65b29la
                   data:
                     button: MENU
+          # Navigatie (3 kolommen) met rechts het volume onder elkaar: Vol +, Dempen, Vol −.
+          # Compact: alleen iconen; de naam staat als tooltip/toegankelijke naam in 'name'.
           - type: grid
-            title: Navigatie
-            columns: 3
+            title: Navigatie en volume
+            columns: 4
             square: false
             cards:
               - type: button
                 name: Home
                 icon: mdi:home
+                show_name: false
+                icon_height: 30px
                 tap_action:
                   action: perform-action
                   perform_action: webostv.button
@@ -59,6 +53,8 @@ views:
               - type: button
                 name: Omhoog
                 icon: mdi:chevron-up
+                show_name: false
+                icon_height: 30px
                 tap_action:
                   action: perform-action
                   perform_action: webostv.button
@@ -69,6 +65,8 @@ views:
               - type: button
                 name: Info
                 icon: mdi:information-outline
+                show_name: false
+                icon_height: 30px
                 tap_action:
                   action: perform-action
                   perform_action: webostv.button
@@ -77,8 +75,22 @@ views:
                   data:
                     button: INFO
               - type: button
+                name: Vol +
+                icon: mdi:volume-plus
+                show_name: false
+                icon_height: 30px
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: VOLUMEUP
+              - type: button
                 name: Links
                 icon: mdi:chevron-left
+                show_name: false
+                icon_height: 30px
                 tap_action:
                   action: perform-action
                   perform_action: webostv.button
@@ -89,6 +101,8 @@ views:
               - type: button
                 name: OK
                 icon: mdi:circle-medium
+                show_name: false
+                icon_height: 30px
                 tap_action:
                   action: perform-action
                   perform_action: webostv.button
@@ -99,6 +113,8 @@ views:
               - type: button
                 name: Rechts
                 icon: mdi:chevron-right
+                show_name: false
+                icon_height: 30px
                 tap_action:
                   action: perform-action
                   perform_action: webostv.button
@@ -107,8 +123,22 @@ views:
                   data:
                     button: RIGHT
               - type: button
+                name: Dempen
+                icon: mdi:volume-mute
+                show_name: false
+                icon_height: 30px
+                tap_action:
+                  action: perform-action
+                  perform_action: webostv.button
+                  target:
+                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                  data:
+                    button: MUTE
+              - type: button
                 name: Terug
                 icon: mdi:arrow-u-left-top
+                show_name: false
+                icon_height: 30px
                 tap_action:
                   action: perform-action
                   perform_action: webostv.button
@@ -119,6 +149,8 @@ views:
               - type: button
                 name: Omlaag
                 icon: mdi:chevron-down
+                show_name: false
+                icon_height: 30px
                 tap_action:
                   action: perform-action
                   perform_action: webostv.button
@@ -129,6 +161,8 @@ views:
               - type: button
                 name: Afsluiten
                 icon: mdi:close
+                show_name: false
+                icon_height: 30px
                 tap_action:
                   action: perform-action
                   perform_action: webostv.button
@@ -136,14 +170,11 @@ views:
                     entity_id: media_player.living_room_lg_webos_tv_oled65b29la
                   data:
                     button: EXIT
-          - type: grid
-            title: Volume en kanalen
-            columns: 4
-            square: false
-            cards:
               - type: button
                 name: Vol −
                 icon: mdi:volume-minus
+                show_name: false
+                icon_height: 30px
                 tap_action:
                   action: perform-action
                   perform_action: webostv.button
@@ -151,16 +182,11 @@ views:
                     entity_id: media_player.living_room_lg_webos_tv_oled65b29la
                   data:
                     button: VOLUMEDOWN
-              - type: button
-                name: Vol +
-                icon: mdi:volume-plus
-                tap_action:
-                  action: perform-action
-                  perform_action: webostv.button
-                  target:
-                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
-                  data:
-                    button: VOLUMEUP
+          - type: grid
+            title: Kanalen
+            columns: 2
+            square: false
+            cards:
               - type: button
                 name: Kan −
                 icon: mdi:chevron-down-box
