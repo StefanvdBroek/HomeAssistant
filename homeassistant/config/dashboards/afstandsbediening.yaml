@@ -31,6 +31,53 @@ views:
                     entity_id: media_player.living_room_lg_webos_tv_oled65b29la
                   data:
                     button: MENU
+          # Streaming: start de app direct, ook als de tv uit staat (script tv_lg_start_app in
+          # packages/tv.yaml: Wake-on-LAN, wachten, app openen). Viaplay heet op de tv "Visplay".
+          - type: grid
+            title: Streaming
+            columns: 5
+            square: false
+            cards:
+              - type: button
+                name: Netflix
+                icon: mdi:netflix
+                tap_action:
+                  action: perform-action
+                  perform_action: script.tv_lg_start_app
+                  data:
+                    app: "Netflix"
+              - type: button
+                name: Prime
+                icon: mdi:filmstrip
+                tap_action:
+                  action: perform-action
+                  perform_action: script.tv_lg_start_app
+                  data:
+                    app: "Prime Video"
+              - type: button
+                name: Videoland
+                icon: mdi:filmstrip-box
+                tap_action:
+                  action: perform-action
+                  perform_action: script.tv_lg_start_app
+                  data:
+                    app: "Videoland"
+              - type: button
+                name: Disney+
+                icon: mdi:movie-star
+                tap_action:
+                  action: perform-action
+                  perform_action: script.tv_lg_start_app
+                  data:
+                    app: "Disney+"
+              - type: button
+                name: Viaplay
+                icon: mdi:play-box-multiple
+                tap_action:
+                  action: perform-action
+                  perform_action: script.tv_lg_start_app
+                  data:
+                    app: "Visplay"
           # Navigatie (3 kolommen) met rechts het volume onder elkaar: Vol +, Dempen, Vol −.
           # Compact: alleen iconen; de naam staat als tooltip/toegankelijke naam in 'name'.
           - type: grid
@@ -268,16 +315,6 @@ views:
                   data:
                     source: "Live tv"
               - type: button
-                name: Netflix
-                icon: mdi:netflix
-                tap_action:
-                  action: perform-action
-                  perform_action: media_player.select_source
-                  target:
-                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
-                  data:
-                    source: "Netflix"
-              - type: button
                 name: YouTube
                 icon: mdi:youtube
                 tap_action:
@@ -287,36 +324,6 @@ views:
                     entity_id: media_player.living_room_lg_webos_tv_oled65b29la
                   data:
                     source: "YouTube"
-              - type: button
-                name: Disney+
-                icon: mdi:movie-star
-                tap_action:
-                  action: perform-action
-                  perform_action: media_player.select_source
-                  target:
-                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
-                  data:
-                    source: "Disney+"
-              - type: button
-                name: Prime Video
-                icon: mdi:filmstrip
-                tap_action:
-                  action: perform-action
-                  perform_action: media_player.select_source
-                  target:
-                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
-                  data:
-                    source: "Prime Video"
-              - type: button
-                name: Videoland
-                icon: mdi:filmstrip-box
-                tap_action:
-                  action: perform-action
-                  perform_action: media_player.select_source
-                  target:
-                    entity_id: media_player.living_room_lg_webos_tv_oled65b29la
-                  data:
-                    source: "Videoland"
               - type: button
                 name: NPO Start
                 icon: mdi:television-play

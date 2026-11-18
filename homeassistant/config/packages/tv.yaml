@@ -31,6 +31,49 @@ script:
                     broadcast_address: 192.168.2.255
                 - delay: "00:00:01"
 
+  # App direct starten (knoppen "Streaming" op de afstandsbediening). Staat de tv uit: eerst aan
+  # via Wake-on-LAN en wachten tot webOS klaar is (max. 30 s), dan de app openen.
+  # Gebruik: script.tv_lg_start_app met data: { app: "Netflix" }  (naam zoals in de bronnenlijst)
+  tv_lg_start_app:
+    alias: LG tv woonkamer - app starten
+    icon: mdi:application-outline
+    mode: restart
+    fields:
+      app:
+        name: App
+        description: Naam van de app zoals in de bronnenlijst van de tv
+        example: Netflix
+        required: true
+        selector:
+          text:
+    sequence:
+      - if:
+          - condition: not
+            conditions:
+              - condition: state
+                entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+                state: ["on", "playing", "paused", "idle", "buffering"]
+        then:
+          - repeat:
+              count: 3
+              sequence:
+                - action: wake_on_lan.send_magic_packet
+                  data:
+                    mac: c8:99:b2:3a:45:8c
+                    broadcast_address: 192.168.2.255
+                - delay: "00:00:01"
+          - wait_template: >
+              {{ states('media_player.living_room_lg_webos_tv_oled65b29la')
+                 in ['on', 'playing', 'paused', 'idle', 'buffering'] }}
+            timeout: "00:00:30"
+            continue_on_timeout: false
+          - delay: "00:00:03" # webOS is net aan; even laten opstarten voor de app geopend wordt
+      - action: media_player.select_source
+        target:
+          entity_id: media_player.living_room_lg_webos_tv_oled65b29la
+        data:
+          source: "{{ app }}"
+
 automation:
   # Zodat ook media_player.turn_on (en de aan-knop in de mediakaart) de LG aanzet: de webOS-
   # integratie roept hiervoor deze trigger aan, omdat hij zelf geen Wake-on-LAN doet.
