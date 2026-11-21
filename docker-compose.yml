@@ -12,7 +12,7 @@
 services:
   homeassistant:
     container_name: homeassistant
-    image: ghcr.io/home-assistant/home-assistant:2026.11.1
+    image: ghcr.io/home-assistant/home-assistant:2026.11.2
     volumes:
       - ./homeassistant/config:/config
       - /etc/localtime:/etc/localtime:ro
@@ -25,7 +25,7 @@ services:
 
   mosquitto:
     container_name: mosquitto
-    image: eclipse-mosquitto:2.0.22
+    image: eclipse-mosquitto:2.0.23
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
@@ -60,7 +60,7 @@ services:
 
   esphome:
     container_name: esphome
-    image: ghcr.io/esphome/esphome:2026.10.2
+    image: ghcr.io/esphome/esphome:2026.11.0
     profiles: ["esphome"]
     volumes:
       - ./esphome/config:/config
